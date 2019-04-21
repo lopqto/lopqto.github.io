@@ -4,10 +4,10 @@
     <title>lopqto's adventures</title>
     <description>Personal blog of Hamidreza Babaee. Reverse engineering, malware analysis, and vulnerability researching.
 </description>
-    <link>http://lopqto.github.io/</link>
-    <atom:link href="http://lopqto.github.io/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Sun, 21 Apr 2019 20:06:56 +0430</pubDate>
-    <lastBuildDate>Sun, 21 Apr 2019 20:06:56 +0430</lastBuildDate>
+    <link>http://localhost:4000/</link>
+    <atom:link href="http://localhost:4000/feed.xml" rel="self" type="application/rss+xml"/>
+    <pubDate>Sun, 21 Apr 2019 20:13:31 +0430</pubDate>
+    <lastBuildDate>Sun, 21 Apr 2019 20:13:31 +0430</lastBuildDate>
     <generator>Jekyll v3.7.4</generator>
     
       <item>
@@ -101,8 +101,8 @@ Run the following command to inject our code and bypass the check:&lt;/p&gt;
 &lt;/ul&gt;
 </description>
         <pubDate>Sat, 20 Apr 2019 20:00:00 +0430</pubDate>
-        <link>http://lopqto.github.io/posts/frida-by-example</link>
-        <guid isPermaLink="true">http://lopqto.github.io/posts/frida-by-example</guid>
+        <link>http://localhost:4000/posts/frida-by-example</link>
+        <guid isPermaLink="true">http://localhost:4000/posts/frida-by-example</guid>
         
         
         <category>reverse-engineering</category>
