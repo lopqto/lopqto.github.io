@@ -1,21 +1,21 @@
 # Site settings
-title: Another Blog
-url: "http://laobubu.github.io"    # the protocol and hostname of your site, eg. `http://laobubu.github.io`
-baseurl: "/jekyll-theme-EasyBook" # the prefix of your site uri, eg. `"/jekyll-theme-EasyBook"` or empty string `""`
-#timezone: Asia/Chongqing
+title: lopqto's adventures
+url: "http://lopqto.github.io"    # the protocol and hostname of your site, eg. `http://laobubu.github.io`
+baseurl: "" # the prefix of your site uri, eg. `"/jekyll-theme-EasyBook"` or empty string `""`
+timezone: Asia/Tehran
 description: >
-  One or more sentences introducing this blog.
+  Personal blog of Hamidreza Babaee. Reverse engineering, malware analysis, and vulnerability researching.
 
 # Your information
-email: your_email@example.com
-author: your_name
-avatar: "//www.gravatar.com/avatar/your_email_md5?d=mm&s=135"
-profile: One sentence introducing yourself.
+email: morpix@protonmail.com
+author: Hamidreza Babaee
+avatar: "https://en.gravatar.com/userimage/156357779/a780a38ea0048d30d1aa273a4057f927.jpg?size=135"
+profile: deep dive into binaries.
 #twitter_username: twitter_username
-#github_username:  github_username
+github_username:  lopqto
 profile_links:
-  Email: "mailto:your_email@example.com"
-  GitHub: "https://github.com/laobubu/jekyll-theme-EasyBook"
+  Email: "mailto:morpix@protonmail.com"
+  GitHub: "https://github.com/lopqto"
   # You can add more profile links above, or edit _includes/sidebar.html 
 
 # Comment Service (Disqus or 多说)
@@ -29,7 +29,7 @@ header:
   links:             # Links on the header. Link to in-site page with a slash as prefix
     About: /about/
     Category: /category/
-    Donate: https://laobubu.net/donate.html
+    # Donate: https://laobubu.net/donate.html
 
 permalink: /archivers/:title
 plugins:

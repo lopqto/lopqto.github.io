@@ -4,6 +4,5 @@ title: About
 permalink: /about/
 ---
 
-Welcome to this website!
-
-> This website is using [laobubu](http://laobubu.net)'s theme: [EasyBook](https://github.com/laobubu/jekyll-theme-EasyBook)
+### Who i am ? 
+security researchers with lots of interest in reverse engineering, malware analysis, and Windows internals. currently, work at [Basu cert](https://basucert.ir).
