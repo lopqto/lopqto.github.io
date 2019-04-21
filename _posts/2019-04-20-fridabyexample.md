@@ -13,7 +13,7 @@ Frida is a dynamic instrumentation toolkit. It gives a simple interface where yo
 ### Prepare a sample PE
 To allow us to dynamically test our function hooks I wrote a small Windows test application harness in C++. You can see the main functionality below, it's short and easy to understand.
 ``` c++
-// poc.cpp
+// target.cpp
 
 #include <Windows.h>
 #include <iostream>
