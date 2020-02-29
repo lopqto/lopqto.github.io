@@ -4,11 +4,11 @@
     <title>lopqto's adventures</title>
     <description>Personal blog of Hamidreza Babaee. Reverse engineering, malware analysis, and vulnerability researching.
 </description>
-    <link>http://localhost:4000/</link>
-    <atom:link href="http://localhost:4000/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Sun, 21 Apr 2019 20:13:31 +0430</pubDate>
-    <lastBuildDate>Sun, 21 Apr 2019 20:13:31 +0430</lastBuildDate>
-    <generator>Jekyll v3.7.4</generator>
+    <link>http://lopqto.github.io/</link>
+    <atom:link href="http://lopqto.github.io/feed.xml" rel="self" type="application/rss+xml"/>
+    <pubDate>Sun, 01 Mar 2020 00:16:24 +0330</pubDate>
+    <lastBuildDate>Sun, 01 Mar 2020 00:16:24 +0330</lastBuildDate>
+    <generator>Jekyll v3.8.5</generator>
     
       <item>
         <title>Frida by example: bypassing IsDebuggerPresent() check</title>
@@ -19,8 +19,8 @@
 
 &lt;h3 id=&quot;prepare-a-sample-pe&quot;&gt;Prepare a sample PE&lt;/h3&gt;
 &lt;p&gt;To allow us to dynamically test our function hooks I wrote a small Windows test application harness in C++. You can see the main functionality below, it’s short and easy to understand.&lt;/p&gt;
-&lt;div class=&quot;language-c++ highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;// target.cpp
-&lt;/span&gt;
+&lt;div class=&quot;language-c++ highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;// target.cpp&lt;/span&gt;
+
 &lt;span class=&quot;cp&quot;&gt;#include &amp;lt;Windows.h&amp;gt;
 #include &amp;lt;iostream&amp;gt;
 &lt;/span&gt;
@@ -42,35 +42,35 @@
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 
 &lt;p&gt;Lets try to look at &lt;a href=&quot;https://msdn.microsoft.com/en-us/library/windows/desktop/ms680345(v=vs.85).aspx&quot;&gt;IsDebuggerPresent()&lt;/a&gt; C++ function prototype.&lt;/p&gt;
-&lt;div class=&quot;language-c++ highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;n&quot;&gt;BOOL&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;WINAPI&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;IsDebuggerPresent&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;div class=&quot;language-c++ highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;n&quot;&gt;BOOL&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;WINAPI&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;IsDebuggerPresent&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 &lt;p&gt;According to Microsoft docs, if the current process is not running in the context of a debugger, the return value will be zero.&lt;/p&gt;
 
 &lt;h3 id=&quot;bypassing-isdebuggerpresent&quot;&gt;Bypassing IsDebuggerPresent()&lt;/h3&gt;
-&lt;p&gt;First of all, you need to install Frida, start from here: &lt;a href=&quot;https://www.frida.re/docs/installation/&quot;&gt;documentation&lt;/a&gt;. You can test your installation by running &lt;code class=&quot;highlighter-rouge&quot;&gt;frida-ps.exe&lt;/code&gt; in Powershell or CMD.&lt;/p&gt;
+&lt;p&gt;First of all, you need to install Frida, start from here: &lt;a href=&quot;https://www.frida.re/docs/installation/&quot;&gt;documentation&lt;/a&gt;. You can test your installation by running &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;frida-ps.exe&lt;/code&gt; in Powershell or CMD.&lt;/p&gt;
 
 &lt;p&gt;How The Frida works? Frida will inject Google’s V8 engine to a specific process. After that it will run JavaScript code and generate a dynamic hook. Lets make our hand dirty and write some JavaScript codes. :)&lt;/p&gt;
 
-&lt;p&gt;For hooking purpose we will use &lt;code class=&quot;highlighter-rouge&quot;&gt;Interceptor&lt;/code&gt; API.&lt;/p&gt;
+&lt;p&gt;For hooking purpose we will use &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Interceptor&lt;/code&gt; API.&lt;/p&gt;
 &lt;blockquote&gt;
-  &lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;Interceptor.attach(target, callbacks)&lt;/code&gt;: intercept calls to &lt;code class=&quot;highlighter-rouge&quot;&gt;target&lt;/code&gt; function. it’s a &lt;code class=&quot;highlighter-rouge&quot;&gt;NativePointer&lt;/code&gt; specifying the address of the function you would like to intercept calls to.&lt;/p&gt;
+  &lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Interceptor.attach(target, callbacks)&lt;/code&gt;: intercept calls to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;target&lt;/code&gt; function. it’s a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;NativePointer&lt;/code&gt; specifying the address of the function you would like to intercept calls to.&lt;/p&gt;
 &lt;/blockquote&gt;
 
-&lt;p&gt;To begin, we need to find the address of &lt;code class=&quot;highlighter-rouge&quot;&gt;IsDebuggerPresent()&lt;/code&gt; function by using &lt;code class=&quot;highlighter-rouge&quot;&gt;DebugSymbol&lt;/code&gt; API.&lt;/p&gt;
+&lt;p&gt;To begin, we need to find the address of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;IsDebuggerPresent()&lt;/code&gt; function by using &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;DebugSymbol&lt;/code&gt; API.&lt;/p&gt;
 
 &lt;div class=&quot;language-javascript highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;// poc.js&lt;/span&gt;
 
-&lt;span class=&quot;nx&quot;&gt;isDebuggerPresentAddr&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;DebugSymbol&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;getFunctionByName&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;IsDebuggerPresent&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;span class=&quot;nx&quot;&gt;console&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;log&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;function address : &quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;isDebuggerPresentAddr&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;nx&quot;&gt;isDebuggerPresentAddr&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;DebugSymbol&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;getFunctionByName&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;IsDebuggerPresent&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;nx&quot;&gt;console&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;log&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;function address : &lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;isDebuggerPresentAddr&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 
-&lt;p&gt;Using the &lt;code class=&quot;highlighter-rouge&quot;&gt;Interceptor&lt;/code&gt;, we can quickly hook the application and write some basic JS to make &lt;code class=&quot;highlighter-rouge&quot;&gt;IsDebuggerPresnt&lt;/code&gt; to always return 0. Notice the use of &lt;code class=&quot;highlighter-rouge&quot;&gt;isDebuggerPresentAddr&lt;/code&gt; in the code.&lt;/p&gt;
+&lt;p&gt;Using the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Interceptor&lt;/code&gt;, we can quickly hook the application and write some basic JS to make &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;IsDebuggerPresnt&lt;/code&gt; to always return 0. Notice the use of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;isDebuggerPresentAddr&lt;/code&gt; in the code.&lt;/p&gt;
 
 &lt;div class=&quot;language-javascript highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;// poc.js&lt;/span&gt;
 
 &lt;span class=&quot;nx&quot;&gt;Interceptor&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;attach&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;isDebuggerPresentAddr&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
         &lt;span class=&quot;na&quot;&gt;onEnter&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;args&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-			&lt;span class=&quot;nx&quot;&gt;console&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;log&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;IsDebuggerPresent() get called ...&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+			&lt;span class=&quot;nx&quot;&gt;console&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;log&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;IsDebuggerPresent() get called ...&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
         &lt;span class=&quot;p&quot;&gt;},&lt;/span&gt;
         &lt;span class=&quot;na&quot;&gt;onLeave&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;retval&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
 			&lt;span class=&quot;nx&quot;&gt;retval&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;replace&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
@@ -78,21 +78,21 @@
 &lt;span class=&quot;p&quot;&gt;});&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;retval&lt;/code&gt; is a &lt;code class=&quot;highlighter-rouge&quot;&gt;NativePointer&lt;/code&gt;-derived object containing the raw return value. We can use &lt;code class=&quot;highlighter-rouge&quot;&gt;replace()&lt;/code&gt; to change the return value.&lt;/p&gt;
+&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;retval&lt;/code&gt; is a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;NativePointer&lt;/code&gt;-derived object containing the raw return value. We can use &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;replace()&lt;/code&gt; to change the return value.&lt;/p&gt;
 
 &lt;p&gt;Now it’s time to test the bypass method. First we spawn process without injecting our code:&lt;/p&gt;
 
-&lt;div class=&quot;language-powershell highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;frida.exe .\target.exe
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;Frida will stop on Entrypoint.Now try to attach your debugger to the &lt;code class=&quot;highlighter-rouge&quot;&gt;target.exe&lt;/code&gt; process and then type &lt;code class=&quot;highlighter-rouge&quot;&gt;%resume&lt;/code&gt; command to continue execution. debugger will be detected by the process.
+&lt;div class=&quot;language-powershell highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nf&quot;&gt;frida.exe&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;\target.exe&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;Frida will stop on Entrypoint.Now try to attach your debugger to the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;target.exe&lt;/code&gt; process and then type &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;%resume&lt;/code&gt; command to continue execution. debugger will be detected by the process.
 &lt;img src=&quot;/img/frida-by-example1.png&quot; alt=&quot;debugger got detect&quot; /&gt;
 Run the following command to inject our code and bypass the check:&lt;/p&gt;
-&lt;div class=&quot;language-powershell highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;frida.exe .\target.exe -l .\poc.js
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;div class=&quot;language-powershell highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nf&quot;&gt;frida.exe&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;\target.exe&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;-l&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;\poc.js&lt;/span&gt;&lt;span class=&quot;w&quot;&gt;
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 &lt;p&gt;You can see the result below.
 &lt;img src=&quot;/img/frida-by-example2.png&quot; alt=&quot;debugger not detect&quot; /&gt;&lt;/p&gt;
 
-&lt;p&gt;The &lt;code class=&quot;highlighter-rouge&quot;&gt;IsDebuggerPresent()&lt;/code&gt; has been bypassed successfully. :)&lt;/p&gt;
+&lt;p&gt;The &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;IsDebuggerPresent()&lt;/code&gt; has been bypassed successfully. :)&lt;/p&gt;
 
 &lt;h3 id=&quot;references&quot;&gt;References&lt;/h3&gt;
 &lt;ul&gt;
@@ -101,8 +101,8 @@ Run the following command to inject our code and bypass the check:&lt;/p&gt;
 &lt;/ul&gt;
 </description>
         <pubDate>Sat, 20 Apr 2019 20:00:00 +0430</pubDate>
-        <link>http://localhost:4000/posts/frida-by-example</link>
-        <guid isPermaLink="true">http://localhost:4000/posts/frida-by-example</guid>
+        <link>http://lopqto.github.io/posts/frida-by-example</link>
+        <guid isPermaLink="true">http://lopqto.github.io/posts/frida-by-example</guid>
         
         
         <category>reverse-engineering</category>
