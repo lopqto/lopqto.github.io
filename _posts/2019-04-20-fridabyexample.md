@@ -94,3 +94,6 @@ The `IsDebuggerPresent()` has been bypassed successfully. :)
 ### References
 + [frida.re docs](https://www.frida.re/docs/javascript-api)
 + [Microsoft MSDN](https://docs.microsoft.com/en-us/windows/desktop/apiindex/api-index-portal)
+
+### Read more
++ [Getting started with Dynamic Binary Analysis by Ali Mosajjal](https://blog.n0p.me/2018/03/2018-03-27-dynamic-binary-analysis/)

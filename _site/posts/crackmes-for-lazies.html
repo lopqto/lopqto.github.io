@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>Crackmes for lazies: Angr demonstration « lopqto's adventures</title>
+  <meta name="description" content="I have been playing crackmes and CTFs all the time to boost my reverse engineering knowledge and learn new stuff, but there are times that you find some chal...">
+
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="canonical" href="http://lopqto.github.io/posts/crackmes-for-lazies">
+  <link rel="shortcut icon" type="image/png" href="favicon.png">
+  <link rel="alternate" type="application/rss+xml" title="lopqto's adventures" href="http://lopqto.github.io/feed.xml" />
+</head>
+
+
+  <body>
+
+    <div class="header-placeholder"></div>
+<header class="header">
+  <div class="wrapper">
+    <div id="sidebar-toggle">TOC</div>
+    <a class="site-title" href="/">lopqto's adventures</a>
+    <nav class="site-nav">
+      
+        
+        <a class="page-link" href="/about/">About</a>
+      
+        
+        <a class="page-link" href="/category/">Category</a>
+      
+    </nav>
+  </div>
+</header>
+
+
+    <div class="page-content">
+      <div class="wrapper">
+        <div class="col-main">
+          <div class="post">
+
+  <header class="post-header">
+    <h1 class="post-title">Crackmes for lazies: Angr demonstration</h1>
+    <p class="post-meta">Mar 1, 2020</p>
+  </header>
+
+  <article class="post-content">
+    <p>I have been playing crackmes and CTFs all the time to boost my reverse engineering knowledge and learn new stuff, but there are times that you find some challenges boring or without new unique technics so you develop some automation tools to pass the challenges. So in this blog post, I’m gonna show you my ultimate tool to solve these types of challenges.</p>
+
+<h3 id="what-is-angr-and-why">What is Angr and why?</h3>
+<p>According to the Angr’s website:</p>
+<blockquote>
+  <p>angr is a multi-architecture binary analysis toolkit, with the capability to perform dynamic symbolic execution (like Mayhem, KLEE, etc.) and various static analyses on binaries.</p>
+</blockquote>
+
+<p>why am I using Angr? cause Angr is a pain-free toolkit with a supporting binding for Python programming language and makes binary analysis easy. the scenario is simple: find the location or function that prints the flag and give the address to Angr. If you wait long enough, Angr will give you the right input to reach the requested flag</p>
+
+<h3 id="symbolic-execution">Symbolic execution</h3>
+<p>Let’s make things clear for ourselves. What is the goal of a typical crackme? Find the right input that passes the checks (some conditional branches) and prints the flag. According to Wikipedia:</p>
+<blockquote>
+  <p>In computer science, symbolic execution (also symbolic evaluation) is a means of analyzing a program to determine what inputs cause each part of a program to execute. An interpreter follows the program, assuming symbolic values for inputs rather than obtaining actual inputs as normal execution of the program would. It thus arrives at expressions in terms of those symbols for expressions and variables in the program, and constraints in terms of those symbols for the possible outcomes of each conditional branch. <a href="https://en.wikipedia.org/wiki/Symbolic_execution">link!</a></p>
+</blockquote>
+
+<p>So Angr will assume the input as a symbolic value and with the power of symbolic execution, it will find the path which leads to eventual printing of the flag. After finding the path, we have a series of conditions that our input needs to pass them to reach that location. Angr will solve these conditions using SMT solver, like z3, in order to ask questions like “given the output of this sequence of operations, what must the input have been?”</p>
+
+<h3 id="demo-time">Demo time</h3>
+<p>I found an interesting crackme challenge that has 13 checks. It will be much harder to follow these checks manually but with the power of Angr, the challenges will be done with ~10 lines of code and ~30sec of computing time.</p>
+
+<p><img src="/img/crackmes-for-lazies2.png" alt="challenge with wrong input" /></p>
+
+<p><img src="/img/crackmes-for-lazies1.png" alt="challenge checks" /></p>
+
+<p>for this challenege,i wrote this code:</p>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="nn">angr</span>
+<span class="kn">import</span> <span class="nn">claripy</span>
+
+<span class="n">project</span> <span class="o">=</span> <span class="n">angr</span><span class="o">.</span><span class="n">Project</span><span class="p">(</span><span class="s">'./keygen'</span><span class="p">,</span> <span class="n">load_options</span><span class="o">=</span><span class="p">{</span><span class="s">'auto_load_libs'</span><span class="p">:</span> <span class="bp">False</span><span class="p">})</span>
+<span class="n">argv1</span> <span class="o">=</span> <span class="n">claripy</span><span class="o">.</span><span class="n">BVS</span><span class="p">(</span><span class="s">'argv1'</span><span class="p">,</span> <span class="mh">0xF</span> <span class="o">*</span> <span class="mi">8</span><span class="p">)</span>
+<span class="n">initial_state</span> <span class="o">=</span> <span class="n">project</span><span class="o">.</span><span class="n">factory</span><span class="o">.</span><span class="n">entry_state</span><span class="p">(</span><span class="n">args</span><span class="o">=</span><span class="p">[</span><span class="s">'./keygen'</span><span class="p">,</span> <span class="n">argv1</span><span class="p">])</span> 
+<span class="n">sm</span> <span class="o">=</span> <span class="n">project</span><span class="o">.</span><span class="n">factory</span><span class="o">.</span><span class="n">simulation_manager</span><span class="p">(</span><span class="n">initial_state</span><span class="p">)</span>
+<span class="n">sm</span><span class="o">.</span><span class="n">explore</span><span class="p">(</span><span class="n">find</span><span class="o">=</span><span class="mh">0x401a5a</span><span class="p">,</span> <span class="n">avoid</span><span class="o">=</span><span class="mh">0x401a73</span><span class="p">)</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">sm</span><span class="o">.</span><span class="n">found</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="k">print</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">solver</span><span class="o">.</span><span class="nb">eval</span><span class="p">(</span><span class="n">argv1</span><span class="p">,</span> <span class="n">cast_to</span><span class="o">=</span><span class="nb">bytes</span><span class="p">))</span>
+</code></pre></div></div>
+<p>Now it’s the time to dissect the code. First of all, you need to install <code class="language-plaintext highlighter-rouge">angr</code> with <code class="language-plaintext highlighter-rouge">pip</code>. Angr has dropped python2 support and you need python3 to use Angr.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>pip <span class="nb">install </span>angr
+<span class="c"># or </span>
+pip3 <span class="nb">install </span>angr
+</code></pre></div></div>
+<p>In this line, we create a <code class="language-plaintext highlighter-rouge">Project</code> object and <code class="language-plaintext highlighter-rouge">./keygen</code> is the relative address to our binary. what about <code class="language-plaintext highlighter-rouge">load_options</code>?</p>
+<blockquote>
+  <p>The CFG analysis does not distinguish between code from different binary objects. This means that by default, it will try to analyze control flow through loaded shared libraries. Since processing the shared libraries will probably prolong the analysis to even days, it’s almost never intended behavior. To load a binary without shared libraries, add the following keyword argument to the Project constructor: <code class="language-plaintext highlighter-rouge">load_options={'auto_load_libs': False}</code>. <a href="https://docs.angr.io/built-in-analyses/cfg#shared-libraries">link!</a></p>
+</blockquote>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">project</span> <span class="o">=</span> <span class="n">angr</span><span class="o">.</span><span class="n">Project</span><span class="p">(</span><span class="s">'./keygen'</span><span class="p">,</span> <span class="n">load_options</span><span class="o">=</span><span class="p">{</span><span class="s">'auto_load_libs'</span><span class="p">:</span> <span class="bp">False</span><span class="p">})</span>
+</code></pre></div></div>
+
+<p>After that, we need to define our input (<code class="language-plaintext highlighter-rouge">argv1</code>) as a symbolic value. <code class="language-plaintext highlighter-rouge">BVS</code> creates a 32-bit symbolic bit vector with the size of <code class="language-plaintext highlighter-rouge">0xF * 8</code>. you need to define the size equal or bigger than the correct input. <a href="https://docs.angr.io/built-in-analyses/cfg#shared-libraries">link!</a></p>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">argv1</span> <span class="o">=</span> <span class="n">claripy</span><span class="o">.</span><span class="n">BVS</span><span class="p">(</span><span class="s">'argv1'</span><span class="p">,</span> <span class="mh">0xF</span> <span class="o">*</span> <span class="mi">8</span><span class="p">)</span>
+</code></pre></div></div>
+<p>Angr has 4 initial states:</p>
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">blank_state()</code> constructs a “blank slate” blank state, with most of its data left uninitialized.
+When accessing uninitialized data, an unconstrained symbolic value will be returned.</li>
+  <li><code class="language-plaintext highlighter-rouge">entry_state()</code> constructs a state ready to execute at the main binary’s entry point.</li>
+  <li><code class="language-plaintext highlighter-rouge">full_init_state()</code> constructs a state that is ready to execute through any initializers that need to be run before the main binary’s entry point, for example, shared library constructors or preinitializers.
+When it is finished with these it will jump to the entry point.</li>
+  <li><code class="language-plaintext highlighter-rouge">call_state()</code> constructs a state ready to execute a given function.</li>
+</ul>
+
+<p>Our binary gets input as an argv and according to the docs:</p>
+<blockquote>
+  <p>If you’re executing in an environment that can take command line arguments or an environment, you can pass a list of arguments through args and a dictionary of environment variables through <code class="language-plaintext highlighter-rouge">env</code> into <code class="language-plaintext highlighter-rouge">entry_state</code> and <code class="language-plaintext highlighter-rouge">full_init_state</code>. The values in these structures can be strings or bitvectors, and will be serialized into the state as the arguments and environment to the simulated execution. <a href="https://docs.angr.io/core-concepts/states#state-presets">link!</a></p>
+</blockquote>
+
+<p>so in this line, we picked <code class="language-plaintext highlighter-rouge">entry_state</code> to pass the symbolic value <code class="language-plaintext highlighter-rouge">argv1</code>.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">initial_state</span> <span class="o">=</span> <span class="n">project</span><span class="o">.</span><span class="n">factory</span><span class="o">.</span><span class="n">entry_state</span><span class="p">(</span><span class="n">args</span><span class="o">=</span><span class="p">[</span><span class="s">'./keygen'</span><span class="p">,</span> <span class="n">argv1</span><span class="p">])</span> 
+</code></pre></div></div>
+
+<blockquote>
+  <p>The most important control interface in angr is the <code class="language-plaintext highlighter-rouge">SimulationManager</code>, which allows you to control symbolic execution over groups of states simultaneously, applying search strategies to explore a program’s state space. <a href="https://docs.angr.io/core-concepts/pathgroups">link!</a></p>
+</blockquote>
+
+<p>We need to define <code class="language-plaintext highlighter-rouge">SimulationManager</code> and path the <code class="language-plaintext highlighter-rouge">initial_state</code> to it.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">sm</span> <span class="o">=</span> <span class="n">project</span><span class="o">.</span><span class="n">factory</span><span class="o">.</span><span class="n">simulation_manager</span><span class="p">(</span><span class="n">initial_state</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>An extremely common operation in symbolic execution is to find a state that reaches a certain address, while discarding all states that go through another address. Simulation manager has a shortcut for this pattern, the <code class="language-plaintext highlighter-rouge">.explore()</code> method.</p>
+
+<p>When launching <code class="language-plaintext highlighter-rouge">.explore()</code> with a <code class="language-plaintext highlighter-rouge">find</code> argument, execution will run until a state is found that matches the <code class="language-plaintext highlighter-rouge">find</code> condition. <code class="language-plaintext highlighter-rouge">find</code> condition can be the address of an instruction to stop, a list of addresses to stop, or a function which takes a state and returns whether it meets some criteria. When any of the states in the active stash match the find condition, they are placed in the <code class="language-plaintext highlighter-rouge">found</code> stash, and execution terminates. You can then explore the <code class="language-plaintext highlighter-rouge">found</code> state, or decide to discard it and continue with the other ones. You can also specify an <code class="language-plaintext highlighter-rouge">avoid</code> condition in the same format as <code class="language-plaintext highlighter-rouge">find</code>. When a state matches the <code class="language-plaintext highlighter-rouge">avoid</code> condition, it is put in the <code class="language-plaintext highlighter-rouge">avoided</code> stash, and execution continues.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">sm</span><span class="o">.</span><span class="n">explore</span><span class="p">(</span><span class="n">find</span><span class="o">=</span><span class="mh">0x401a5a</span><span class="p">,</span> <span class="n">avoid</span><span class="o">=</span><span class="mh">0x401a73</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>Let’s look at the binary:
+<img src="/img/crackmes-for-lazies3.png" alt="addresses" /></p>
+
+<p>The address of <code class="language-plaintext highlighter-rouge">ACCESS GRANTED</code> print is <code class="language-plaintext highlighter-rouge">0x401a5a</code> and the adress of <code class="language-plaintext highlighter-rouge">ACCESS DENIED</code> print is <code class="language-plaintext highlighter-rouge">0x401a73</code>.</p>
+
+<p>I wrote the last two lines to grab the first value from the <code class="language-plaintext highlighter-rouge">found</code> stash and cast that value to byte and print the final result.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">result</span> <span class="o">=</span> <span class="n">sm</span><span class="o">.</span><span class="n">found</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="k">print</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">solver</span><span class="o">.</span><span class="nb">eval</span><span class="p">(</span><span class="n">argv1</span><span class="p">,</span> <span class="n">cast_to</span><span class="o">=</span><span class="nb">bytes</span><span class="p">))</span>
+</code></pre></div></div>
+
+<p>Let’s run our program to see the result:
+<img src="/img/crackmes-for-lazies4.png" alt="run" /></p>
+
+<p>That’s it, I hope you find this useful.</p>
+
+<h3 id="references">References</h3>
+<ul>
+  <li><a href="https://docs.angr.io/">angr docs</a></li>
+  <li><a href="https://en.wikipedia.org/wiki/Symbolic_execution">Wikipedia</a></li>
+</ul>
+
+  </article>
+  
+  
+
+
+
+
+</div>
+
+        </div>
+        <div class="col-second">
+          <div class="col-box col-box-author">
+  <img class="avatar" src="https://en.gravatar.com/userimage/156357779/a780a38ea0048d30d1aa273a4057f927.jpg?size=135" alt="Hamidreza Babaee">
+  <div class="col-box-title name">Hamidreza Babaee</div>
+  <p>deep dive into binaries.</p>
+  <p class="contact">
+    
+    
+    
+    <a href="mailto:morpix@protonmail.com">Email</a>
+    
+    <a href="https://github.com/lopqto">GitHub</a>
+    
+  </p>
+</div>
+
+<div class="col-box">
+  <div class="col-box-title">Newest Posts</div>
+  <ul class="post-list">
+    
+      <li><a class="post-link" href="/posts/crackmes-for-lazies">Crackmes for lazies: Angr demonstration</a></li>
+    
+      <li><a class="post-link" href="/posts/frida-by-example">Frida by example: bypassing IsDebuggerPresent() check</a></li>
+    
+  </ul>
+</div>
+
+<div class="col-box post-toc hide">
+  <div class="col-box-title">TOC</div>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    <footer class="footer">
+<div class="wrapper">
+&copy; 2020 Hamidreza Babaee
+</div>
+</footer>
+
+<script type="text/x-mathjax-config">MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$']]}});</script>
+<script src="/js/easybook.js"></script>
+
+
+  </body>
+
+</html>

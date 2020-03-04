@@ -6,9 +6,134 @@
 </description>
     <link>http://lopqto.github.io/</link>
     <atom:link href="http://lopqto.github.io/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Sun, 01 Mar 2020 00:16:24 +0330</pubDate>
-    <lastBuildDate>Sun, 01 Mar 2020 00:16:24 +0330</lastBuildDate>
+    <pubDate>Wed, 04 Mar 2020 13:06:37 +0330</pubDate>
+    <lastBuildDate>Wed, 04 Mar 2020 13:06:37 +0330</lastBuildDate>
     <generator>Jekyll v3.8.5</generator>
+    
+      <item>
+        <title>Crackmes for lazies: Angr demonstration</title>
+        <description>&lt;p&gt;I have been playing crackmes and CTFs all the time to boost my reverse engineering knowledge and learn new stuff, but there are times that you find some challenges boring or without new unique technics so you develop some automation tools to pass the challenges. So in this blog post, I’m gonna show you my ultimate tool to solve these types of challenges.&lt;/p&gt;
+
+&lt;h3 id=&quot;what-is-angr-and-why&quot;&gt;What is Angr and why?&lt;/h3&gt;
+&lt;p&gt;According to the Angr’s website:&lt;/p&gt;
+&lt;blockquote&gt;
+  &lt;p&gt;angr is a multi-architecture binary analysis toolkit, with the capability to perform dynamic symbolic execution (like Mayhem, KLEE, etc.) and various static analyses on binaries.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;why am I using Angr? cause Angr is a pain-free toolkit with a supporting binding for Python programming language and makes binary analysis easy. the scenario is simple: find the location or function that prints the flag and give the address to Angr. If you wait long enough, Angr will give you the right input to reach the requested flag&lt;/p&gt;
+
+&lt;h3 id=&quot;symbolic-execution&quot;&gt;Symbolic execution&lt;/h3&gt;
+&lt;p&gt;Let’s make things clear for ourselves. What is the goal of a typical crackme? Find the right input that passes the checks (some conditional branches) and prints the flag. According to Wikipedia:&lt;/p&gt;
+&lt;blockquote&gt;
+  &lt;p&gt;In computer science, symbolic execution (also symbolic evaluation) is a means of analyzing a program to determine what inputs cause each part of a program to execute. An interpreter follows the program, assuming symbolic values for inputs rather than obtaining actual inputs as normal execution of the program would. It thus arrives at expressions in terms of those symbols for expressions and variables in the program, and constraints in terms of those symbols for the possible outcomes of each conditional branch. &lt;a href=&quot;https://en.wikipedia.org/wiki/Symbolic_execution&quot;&gt;link!&lt;/a&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;So Angr will assume the input as a symbolic value and with the power of symbolic execution, it will find the path which leads to eventual printing of the flag. After finding the path, we have a series of conditions that our input needs to pass them to reach that location. Angr will solve these conditions using SMT solver, like z3, in order to ask questions like “given the output of this sequence of operations, what must the input have been?”&lt;/p&gt;
+
+&lt;h3 id=&quot;demo-time&quot;&gt;Demo time&lt;/h3&gt;
+&lt;p&gt;I found an interesting crackme challenge that has 13 checks. It will be much harder to follow these checks manually but with the power of Angr, the challenges will be done with ~10 lines of code and ~30sec of computing time.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/img/crackmes-for-lazies2.png&quot; alt=&quot;challenge with wrong input&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/img/crackmes-for-lazies1.png&quot; alt=&quot;challenge checks&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;for this challenege,i wrote this code:&lt;/p&gt;
+&lt;div class=&quot;language-python highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;angr&lt;/span&gt;
+&lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;claripy&lt;/span&gt;
+
+&lt;span class=&quot;n&quot;&gt;project&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;angr&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Project&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;'./keygen'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;load_options&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;'auto_load_libs'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;bp&quot;&gt;False&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;})&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;argv1&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;claripy&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;BVS&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;'argv1'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mh&quot;&gt;0xF&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;8&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;initial_state&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;project&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;factory&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;entry_state&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;args&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;'./keygen'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;argv1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;])&lt;/span&gt; 
+&lt;span class=&quot;n&quot;&gt;sm&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;project&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;factory&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;simulation_manager&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;initial_state&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;sm&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;explore&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;find&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x401a5a&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;avoid&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x401a73&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;result&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;sm&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;found&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;print&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;result&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;solver&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;eval&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;argv1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;cast_to&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;bytes&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;Now it’s the time to dissect the code. First of all, you need to install &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;angr&lt;/code&gt; with &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;pip&lt;/code&gt;. Angr has dropped python2 support and you need python3 to use Angr.&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;pip &lt;span class=&quot;nb&quot;&gt;install &lt;/span&gt;angr
+&lt;span class=&quot;c&quot;&gt;# or &lt;/span&gt;
+pip3 &lt;span class=&quot;nb&quot;&gt;install &lt;/span&gt;angr
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;In this line, we create a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Project&lt;/code&gt; object and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;./keygen&lt;/code&gt; is the relative address to our binary. what about &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;load_options&lt;/code&gt;?&lt;/p&gt;
+&lt;blockquote&gt;
+  &lt;p&gt;The CFG analysis does not distinguish between code from different binary objects. This means that by default, it will try to analyze control flow through loaded shared libraries. Since processing the shared libraries will probably prolong the analysis to even days, it’s almost never intended behavior. To load a binary without shared libraries, add the following keyword argument to the Project constructor: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;load_options={'auto_load_libs': False}&lt;/code&gt;. &lt;a href=&quot;https://docs.angr.io/built-in-analyses/cfg#shared-libraries&quot;&gt;link!&lt;/a&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;div class=&quot;language-python highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;n&quot;&gt;project&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;angr&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Project&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;'./keygen'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;load_options&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;'auto_load_libs'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;bp&quot;&gt;False&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;})&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;After that, we need to define our input (&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;argv1&lt;/code&gt;) as a symbolic value. &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;BVS&lt;/code&gt; creates a 32-bit symbolic bit vector with the size of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;0xF * 8&lt;/code&gt;. you need to define the size equal or bigger than the correct input. &lt;a href=&quot;https://docs.angr.io/built-in-analyses/cfg#shared-libraries&quot;&gt;link!&lt;/a&gt;&lt;/p&gt;
+&lt;div class=&quot;language-python highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;n&quot;&gt;argv1&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;claripy&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;BVS&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;'argv1'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mh&quot;&gt;0xF&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;8&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+&lt;p&gt;Angr has 4 initial states:&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;blank_state()&lt;/code&gt; constructs a “blank slate” blank state, with most of its data left uninitialized.
+When accessing uninitialized data, an unconstrained symbolic value will be returned.&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;entry_state()&lt;/code&gt; constructs a state ready to execute at the main binary’s entry point.&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;full_init_state()&lt;/code&gt; constructs a state that is ready to execute through any initializers that need to be run before the main binary’s entry point, for example, shared library constructors or preinitializers.
+When it is finished with these it will jump to the entry point.&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;call_state()&lt;/code&gt; constructs a state ready to execute a given function.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Our binary gets input as an argv and according to the docs:&lt;/p&gt;
+&lt;blockquote&gt;
+  &lt;p&gt;If you’re executing in an environment that can take command line arguments or an environment, you can pass a list of arguments through args and a dictionary of environment variables through &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;env&lt;/code&gt; into &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;entry_state&lt;/code&gt; and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;full_init_state&lt;/code&gt;. The values in these structures can be strings or bitvectors, and will be serialized into the state as the arguments and environment to the simulated execution. &lt;a href=&quot;https://docs.angr.io/core-concepts/states#state-presets&quot;&gt;link!&lt;/a&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;so in this line, we picked &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;entry_state&lt;/code&gt; to pass the symbolic value &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;argv1&lt;/code&gt;.&lt;/p&gt;
+
+&lt;div class=&quot;language-python highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;n&quot;&gt;initial_state&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;project&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;factory&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;entry_state&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;args&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;'./keygen'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;argv1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;])&lt;/span&gt; 
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;The most important control interface in angr is the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;SimulationManager&lt;/code&gt;, which allows you to control symbolic execution over groups of states simultaneously, applying search strategies to explore a program’s state space. &lt;a href=&quot;https://docs.angr.io/core-concepts/pathgroups&quot;&gt;link!&lt;/a&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;We need to define &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;SimulationManager&lt;/code&gt; and path the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;initial_state&lt;/code&gt; to it.&lt;/p&gt;
+
+&lt;div class=&quot;language-python highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;n&quot;&gt;sm&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;project&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;factory&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;simulation_manager&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;initial_state&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;An extremely common operation in symbolic execution is to find a state that reaches a certain address, while discarding all states that go through another address. Simulation manager has a shortcut for this pattern, the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.explore()&lt;/code&gt; method.&lt;/p&gt;
+
+&lt;p&gt;When launching &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.explore()&lt;/code&gt; with a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;find&lt;/code&gt; argument, execution will run until a state is found that matches the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;find&lt;/code&gt; condition. &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;find&lt;/code&gt; condition can be the address of an instruction to stop, a list of addresses to stop, or a function which takes a state and returns whether it meets some criteria. When any of the states in the active stash match the find condition, they are placed in the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;found&lt;/code&gt; stash, and execution terminates. You can then explore the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;found&lt;/code&gt; state, or decide to discard it and continue with the other ones. You can also specify an &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;avoid&lt;/code&gt; condition in the same format as &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;find&lt;/code&gt;. When a state matches the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;avoid&lt;/code&gt; condition, it is put in the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;avoided&lt;/code&gt; stash, and execution continues.&lt;/p&gt;
+
+&lt;div class=&quot;language-python highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;n&quot;&gt;sm&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;explore&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;find&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x401a5a&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;avoid&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x401a73&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Let’s look at the binary:
+&lt;img src=&quot;/img/crackmes-for-lazies3.png&quot; alt=&quot;addresses&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;The address of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ACCESS GRANTED&lt;/code&gt; print is &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;0x401a5a&lt;/code&gt; and the adress of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ACCESS DENIED&lt;/code&gt; print is &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;0x401a73&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;I wrote the last two lines to grab the first value from the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;found&lt;/code&gt; stash and cast that value to byte and print the final result.&lt;/p&gt;
+
+&lt;div class=&quot;language-python highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;n&quot;&gt;result&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;sm&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;found&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;print&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;result&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;solver&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;eval&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;argv1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;cast_to&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;bytes&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Let’s run our program to see the result:
+&lt;img src=&quot;/img/crackmes-for-lazies4.png&quot; alt=&quot;run&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;That’s it, I hope you find this useful.&lt;/p&gt;
+
+&lt;h3 id=&quot;references&quot;&gt;References&lt;/h3&gt;
+&lt;ul&gt;
+  &lt;li&gt;&lt;a href=&quot;https://docs.angr.io/&quot;&gt;angr docs&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://en.wikipedia.org/wiki/Symbolic_execution&quot;&gt;Wikipedia&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+</description>
+        <pubDate>Sun, 01 Mar 2020 19:10:00 +0330</pubDate>
+        <link>http://lopqto.github.io/posts/crackmes-for-lazies</link>
+        <guid isPermaLink="true">http://lopqto.github.io/posts/crackmes-for-lazies</guid>
+        
+        
+        <category>reverse-engineering</category>
+        
+        <category>crackmes</category>
+        
+      </item>
     
       <item>
         <title>Frida by example: bypassing IsDebuggerPresent() check</title>
@@ -98,6 +223,11 @@ Run the following command to inject our code and bypass the check:&lt;/p&gt;
 &lt;ul&gt;
   &lt;li&gt;&lt;a href=&quot;https://www.frida.re/docs/javascript-api&quot;&gt;frida.re docs&lt;/a&gt;&lt;/li&gt;
   &lt;li&gt;&lt;a href=&quot;https://docs.microsoft.com/en-us/windows/desktop/apiindex/api-index-portal&quot;&gt;Microsoft MSDN&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;read-more&quot;&gt;Read more&lt;/h3&gt;
+&lt;ul&gt;
+  &lt;li&gt;&lt;a href=&quot;https://blog.n0p.me/2018/03/2018-03-27-dynamic-binary-analysis/&quot;&gt;Getting started with Dynamic Binary Analysis by Ali Mosajjal&lt;/a&gt;&lt;/li&gt;
 &lt;/ul&gt;
 </description>
         <pubDate>Sat, 20 Apr 2019 20:00:00 +0430</pubDate>
