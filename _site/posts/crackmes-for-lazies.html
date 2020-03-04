@@ -6,7 +6,7 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <title>Crackmes for lazies: Angr demonstration « lopqto's adventures</title>
+  <title>Crackmes for lazies: angr demonstration « lopqto's adventures</title>
   <meta name="description" content="I have been playing crackmes and CTFs all the time to boost my reverse engineering knowledge and learn new stuff, but there are times that you find some chal...">
 
   <link rel="stylesheet" href="/css/main.css">
@@ -42,20 +42,20 @@
           <div class="post">
 
   <header class="post-header">
-    <h1 class="post-title">Crackmes for lazies: Angr demonstration</h1>
+    <h1 class="post-title">Crackmes for lazies: angr demonstration</h1>
     <p class="post-meta">Mar 1, 2020</p>
   </header>
 
   <article class="post-content">
     <p>I have been playing crackmes and CTFs all the time to boost my reverse engineering knowledge and learn new stuff, but there are times that you find some challenges boring or without new unique technics so you develop some automation tools to pass the challenges. So in this blog post, I’m gonna show you my ultimate tool to solve these types of challenges.</p>
 
-<h3 id="what-is-angr-and-why">What is Angr and why?</h3>
-<p>According to the Angr’s website:</p>
+<h3 id="what-is-angr-and-why">What is angr and why?</h3>
+<p>According to the angr’s website:</p>
 <blockquote>
   <p>angr is a multi-architecture binary analysis toolkit, with the capability to perform dynamic symbolic execution (like Mayhem, KLEE, etc.) and various static analyses on binaries.</p>
 </blockquote>
 
-<p>why am I using Angr? cause Angr is a pain-free toolkit with a supporting binding for Python programming language and makes binary analysis easy. the scenario is simple: find the location or function that prints the flag and give the address to Angr. If you wait long enough, Angr will give you the right input to reach the requested flag</p>
+<p>why am I using angr? cause angr is a pain-free toolkit with a supporting binding for Python programming language and makes binary analysis easy. the scenario is simple: find the location or function that prints the flag and give the address to angr. If you wait long enough, angr will give you the right input to reach the requested flag</p>
 
 <h3 id="symbolic-execution">Symbolic execution</h3>
 <p>Let’s make things clear for ourselves. What is the goal of a typical crackme? Find the right input that passes the checks (some conditional branches) and prints the flag. According to Wikipedia:</p>
@@ -63,10 +63,10 @@
   <p>In computer science, symbolic execution (also symbolic evaluation) is a means of analyzing a program to determine what inputs cause each part of a program to execute. An interpreter follows the program, assuming symbolic values for inputs rather than obtaining actual inputs as normal execution of the program would. It thus arrives at expressions in terms of those symbols for expressions and variables in the program, and constraints in terms of those symbols for the possible outcomes of each conditional branch. <a href="https://en.wikipedia.org/wiki/Symbolic_execution">link!</a></p>
 </blockquote>
 
-<p>So Angr will assume the input as a symbolic value and with the power of symbolic execution, it will find the path which leads to eventual printing of the flag. After finding the path, we have a series of conditions that our input needs to pass them to reach that location. Angr will solve these conditions using SMT solver, like z3, in order to ask questions like “given the output of this sequence of operations, what must the input have been?”</p>
+<p>So angr will assume the input as a symbolic value and with the power of symbolic execution, it will find the path which leads to eventual printing of the flag. After finding the path, we have a series of conditions that our input needs to pass them to reach that location. angr will solve these conditions using SMT solver, like z3, in order to ask questions like “given the output of this sequence of operations, what must the input have been?”</p>
 
 <h3 id="demo-time">Demo time</h3>
-<p>I found an interesting crackme challenge that has 13 checks. It will be much harder to follow these checks manually but with the power of Angr, the challenges will be done with ~10 lines of code and ~30sec of computing time.</p>
+<p>I found an interesting crackme challenge that has 13 checks. It will be much harder to follow these checks manually but with the power of angr, the challenges will be done with ~10 lines of code and ~30sec of computing time.</p>
 
 <p><img src="/img/crackmes-for-lazies2.png" alt="challenge with wrong input" /></p>
 
@@ -84,7 +84,7 @@
 <span class="n">result</span> <span class="o">=</span> <span class="n">sm</span><span class="o">.</span><span class="n">found</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
 <span class="k">print</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">solver</span><span class="o">.</span><span class="nb">eval</span><span class="p">(</span><span class="n">argv1</span><span class="p">,</span> <span class="n">cast_to</span><span class="o">=</span><span class="nb">bytes</span><span class="p">))</span>
 </code></pre></div></div>
-<p>Now it’s the time to dissect the code. First of all, you need to install <code class="language-plaintext highlighter-rouge">angr</code> with <code class="language-plaintext highlighter-rouge">pip</code>. Angr has dropped python2 support and you need python3 to use Angr.</p>
+<p>Now it’s the time to dissect the code. First of all, you need to install <code class="language-plaintext highlighter-rouge">angr</code> with <code class="language-plaintext highlighter-rouge">pip</code>. angr has dropped python2 support and you need python3 to use angr.</p>
 
 <div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>pip <span class="nb">install </span>angr
 <span class="c"># or </span>
@@ -101,7 +101,7 @@ pip3 <span class="nb">install </span>angr
 <p>After that, we need to define our input (<code class="language-plaintext highlighter-rouge">argv1</code>) as a symbolic value. <code class="language-plaintext highlighter-rouge">BVS</code> creates a 32-bit symbolic bit vector with the size of <code class="language-plaintext highlighter-rouge">0xF * 8</code>. you need to define the size equal or bigger than the correct input. <a href="https://docs.angr.io/built-in-analyses/cfg#shared-libraries">link!</a></p>
 <div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">argv1</span> <span class="o">=</span> <span class="n">claripy</span><span class="o">.</span><span class="n">BVS</span><span class="p">(</span><span class="s">'argv1'</span><span class="p">,</span> <span class="mh">0xF</span> <span class="o">*</span> <span class="mi">8</span><span class="p">)</span>
 </code></pre></div></div>
-<p>Angr has 4 initial states:</p>
+<p>angr has 4 initial states:</p>
 <ul>
   <li><code class="language-plaintext highlighter-rouge">blank_state()</code> constructs a “blank slate” blank state, with most of its data left uninitialized.
 When accessing uninitialized data, an unconstrained symbolic value will be returned.</li>
@@ -189,7 +189,7 @@ When it is finished with these it will jump to the entry point.</li>
   <div class="col-box-title">Newest Posts</div>
   <ul class="post-list">
     
-      <li><a class="post-link" href="/posts/crackmes-for-lazies">Crackmes for lazies: Angr demonstration</a></li>
+      <li><a class="post-link" href="/posts/crackmes-for-lazies">Crackmes for lazies: angr demonstration</a></li>
     
       <li><a class="post-link" href="/posts/frida-by-example">Frida by example: bypassing IsDebuggerPresent() check</a></li>
     

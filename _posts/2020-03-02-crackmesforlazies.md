@@ -1,26 +1,26 @@
 ---
 layout: post
-title:  "Crackmes for lazies: Angr demonstration"
+title:  "Crackmes for lazies: angr demonstration"
 date:   2020-03-01 15:40:00
 categories: reverse-engineering crackmes
 permalink: /posts/crackmes-for-lazies
 ---
 I have been playing crackmes and CTFs all the time to boost my reverse engineering knowledge and learn new stuff, but there are times that you find some challenges boring or without new unique technics so you develop some automation tools to pass the challenges. So in this blog post, I'm gonna show you my ultimate tool to solve these types of challenges.
 
-### What is Angr and why?
-According to the Angr's website:
+### What is angr and why?
+According to the angr's website:
 > angr is a multi-architecture binary analysis toolkit, with the capability to perform dynamic symbolic execution (like Mayhem, KLEE, etc.) and various static analyses on binaries.
 
-why am I using Angr? cause Angr is a pain-free toolkit with a supporting binding for Python programming language and makes binary analysis easy. the scenario is simple: find the location or function that prints the flag and give the address to Angr. If you wait long enough, Angr will give you the right input to reach the requested flag
+why am I using angr? cause angr is a pain-free toolkit with a supporting binding for Python programming language and makes binary analysis easy. the scenario is simple: find the location or function that prints the flag and give the address to angr. If you wait long enough, angr will give you the right input to reach the requested flag
 
 ### Symbolic execution
 Let's make things clear for ourselves. What is the goal of a typical crackme? Find the right input that passes the checks (some conditional branches) and prints the flag. According to Wikipedia:
 > In computer science, symbolic execution (also symbolic evaluation) is a means of analyzing a program to determine what inputs cause each part of a program to execute. An interpreter follows the program, assuming symbolic values for inputs rather than obtaining actual inputs as normal execution of the program would. It thus arrives at expressions in terms of those symbols for expressions and variables in the program, and constraints in terms of those symbols for the possible outcomes of each conditional branch. [link!](https://en.wikipedia.org/wiki/Symbolic_execution)
 
-So Angr will assume the input as a symbolic value and with the power of symbolic execution, it will find the path which leads to eventual printing of the flag. After finding the path, we have a series of conditions that our input needs to pass them to reach that location. Angr will solve these conditions using SMT solver, like z3, in order to ask questions like "given the output of this sequence of operations, what must the input have been?"
+So angr will assume the input as a symbolic value and with the power of symbolic execution, it will find the path which leads to eventual printing of the flag. After finding the path, we have a series of conditions that our input needs to pass them to reach that location. angr will solve these conditions using SMT solver, like z3, in order to ask questions like "given the output of this sequence of operations, what must the input have been?"
 
 ### Demo time
-I found an interesting crackme challenge that has 13 checks. It will be much harder to follow these checks manually but with the power of Angr, the challenges will be done with ~10 lines of code and ~30sec of computing time.
+I found an interesting crackme challenge that has 13 checks. It will be much harder to follow these checks manually but with the power of angr, the challenges will be done with ~10 lines of code and ~30sec of computing time.
 
 ![challenge with wrong input](/img/crackmes-for-lazies2.png)
 
@@ -39,7 +39,7 @@ sm.explore(find=0x401a5a, avoid=0x401a73)
 result = sm.found[0]
 print(result.solver.eval(argv1, cast_to=bytes))
 ```
-Now it's the time to dissect the code. First of all, you need to install `angr` with `pip`. Angr has dropped python2 support and you need python3 to use Angr.
+Now it's the time to dissect the code. First of all, you need to install `angr` with `pip`. angr has dropped python2 support and you need python3 to use angr.
 
 ``` bash
 pip install angr
@@ -57,7 +57,7 @@ After that, we need to define our input (`argv1`) as a symbolic value. `BVS` cre
 ``` python
 argv1 = claripy.BVS('argv1', 0xF * 8)
 ```
-Angr has 4 initial states:
+angr has 4 initial states:
 * `blank_state()` constructs a "blank slate" blank state, with most of its data left uninitialized.
 When accessing uninitialized data, an unconstrained symbolic value will be returned.
 * `entry_state()` constructs a state ready to execute at the main binary's entry point.

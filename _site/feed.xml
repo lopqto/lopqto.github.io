@@ -6,21 +6,21 @@
 </description>
     <link>https://lopqto.me/</link>
     <atom:link href="https://lopqto.me/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Wed, 04 Mar 2020 13:10:10 +0330</pubDate>
-    <lastBuildDate>Wed, 04 Mar 2020 13:10:10 +0330</lastBuildDate>
+    <pubDate>Wed, 04 Mar 2020 13:13:43 +0330</pubDate>
+    <lastBuildDate>Wed, 04 Mar 2020 13:13:43 +0330</lastBuildDate>
     <generator>Jekyll v3.8.5</generator>
     
       <item>
-        <title>Crackmes for lazies: Angr demonstration</title>
+        <title>Crackmes for lazies: angr demonstration</title>
         <description>&lt;p&gt;I have been playing crackmes and CTFs all the time to boost my reverse engineering knowledge and learn new stuff, but there are times that you find some challenges boring or without new unique technics so you develop some automation tools to pass the challenges. So in this blog post, I’m gonna show you my ultimate tool to solve these types of challenges.&lt;/p&gt;
 
-&lt;h3 id=&quot;what-is-angr-and-why&quot;&gt;What is Angr and why?&lt;/h3&gt;
-&lt;p&gt;According to the Angr’s website:&lt;/p&gt;
+&lt;h3 id=&quot;what-is-angr-and-why&quot;&gt;What is angr and why?&lt;/h3&gt;
+&lt;p&gt;According to the angr’s website:&lt;/p&gt;
 &lt;blockquote&gt;
   &lt;p&gt;angr is a multi-architecture binary analysis toolkit, with the capability to perform dynamic symbolic execution (like Mayhem, KLEE, etc.) and various static analyses on binaries.&lt;/p&gt;
 &lt;/blockquote&gt;
 
-&lt;p&gt;why am I using Angr? cause Angr is a pain-free toolkit with a supporting binding for Python programming language and makes binary analysis easy. the scenario is simple: find the location or function that prints the flag and give the address to Angr. If you wait long enough, Angr will give you the right input to reach the requested flag&lt;/p&gt;
+&lt;p&gt;why am I using angr? cause angr is a pain-free toolkit with a supporting binding for Python programming language and makes binary analysis easy. the scenario is simple: find the location or function that prints the flag and give the address to angr. If you wait long enough, angr will give you the right input to reach the requested flag&lt;/p&gt;
 
 &lt;h3 id=&quot;symbolic-execution&quot;&gt;Symbolic execution&lt;/h3&gt;
 &lt;p&gt;Let’s make things clear for ourselves. What is the goal of a typical crackme? Find the right input that passes the checks (some conditional branches) and prints the flag. According to Wikipedia:&lt;/p&gt;
@@ -28,10 +28,10 @@
   &lt;p&gt;In computer science, symbolic execution (also symbolic evaluation) is a means of analyzing a program to determine what inputs cause each part of a program to execute. An interpreter follows the program, assuming symbolic values for inputs rather than obtaining actual inputs as normal execution of the program would. It thus arrives at expressions in terms of those symbols for expressions and variables in the program, and constraints in terms of those symbols for the possible outcomes of each conditional branch. &lt;a href=&quot;https://en.wikipedia.org/wiki/Symbolic_execution&quot;&gt;link!&lt;/a&gt;&lt;/p&gt;
 &lt;/blockquote&gt;
 
-&lt;p&gt;So Angr will assume the input as a symbolic value and with the power of symbolic execution, it will find the path which leads to eventual printing of the flag. After finding the path, we have a series of conditions that our input needs to pass them to reach that location. Angr will solve these conditions using SMT solver, like z3, in order to ask questions like “given the output of this sequence of operations, what must the input have been?”&lt;/p&gt;
+&lt;p&gt;So angr will assume the input as a symbolic value and with the power of symbolic execution, it will find the path which leads to eventual printing of the flag. After finding the path, we have a series of conditions that our input needs to pass them to reach that location. angr will solve these conditions using SMT solver, like z3, in order to ask questions like “given the output of this sequence of operations, what must the input have been?”&lt;/p&gt;
 
 &lt;h3 id=&quot;demo-time&quot;&gt;Demo time&lt;/h3&gt;
-&lt;p&gt;I found an interesting crackme challenge that has 13 checks. It will be much harder to follow these checks manually but with the power of Angr, the challenges will be done with ~10 lines of code and ~30sec of computing time.&lt;/p&gt;
+&lt;p&gt;I found an interesting crackme challenge that has 13 checks. It will be much harder to follow these checks manually but with the power of angr, the challenges will be done with ~10 lines of code and ~30sec of computing time.&lt;/p&gt;
 
 &lt;p&gt;&lt;img src=&quot;/img/crackmes-for-lazies2.png&quot; alt=&quot;challenge with wrong input&quot; /&gt;&lt;/p&gt;
 
@@ -49,7 +49,7 @@
 &lt;span class=&quot;n&quot;&gt;result&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;sm&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;found&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
 &lt;span class=&quot;k&quot;&gt;print&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;result&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;solver&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;eval&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;argv1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;cast_to&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;bytes&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;Now it’s the time to dissect the code. First of all, you need to install &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;angr&lt;/code&gt; with &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;pip&lt;/code&gt;. Angr has dropped python2 support and you need python3 to use Angr.&lt;/p&gt;
+&lt;p&gt;Now it’s the time to dissect the code. First of all, you need to install &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;angr&lt;/code&gt; with &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;pip&lt;/code&gt;. angr has dropped python2 support and you need python3 to use angr.&lt;/p&gt;
 
 &lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;pip &lt;span class=&quot;nb&quot;&gt;install &lt;/span&gt;angr
 &lt;span class=&quot;c&quot;&gt;# or &lt;/span&gt;
@@ -66,7 +66,7 @@ pip3 &lt;span class=&quot;nb&quot;&gt;install &lt;/span&gt;angr
 &lt;p&gt;After that, we need to define our input (&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;argv1&lt;/code&gt;) as a symbolic value. &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;BVS&lt;/code&gt; creates a 32-bit symbolic bit vector with the size of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;0xF * 8&lt;/code&gt;. you need to define the size equal or bigger than the correct input. &lt;a href=&quot;https://docs.angr.io/built-in-analyses/cfg#shared-libraries&quot;&gt;link!&lt;/a&gt;&lt;/p&gt;
 &lt;div class=&quot;language-python highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;n&quot;&gt;argv1&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;claripy&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;BVS&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;'argv1'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mh&quot;&gt;0xF&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;8&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-&lt;p&gt;Angr has 4 initial states:&lt;/p&gt;
+&lt;p&gt;angr has 4 initial states:&lt;/p&gt;
 &lt;ul&gt;
   &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;blank_state()&lt;/code&gt; constructs a “blank slate” blank state, with most of its data left uninitialized.
 When accessing uninitialized data, an unconstrained symbolic value will be returned.&lt;/li&gt;
