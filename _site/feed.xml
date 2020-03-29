@@ -6,9 +6,86 @@
 </description>
     <link>https://lopqto.me/</link>
     <atom:link href="https://lopqto.me/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Wed, 04 Mar 2020 13:23:55 +0330</pubDate>
-    <lastBuildDate>Wed, 04 Mar 2020 13:23:55 +0330</lastBuildDate>
+    <pubDate>Sun, 29 Mar 2020 10:37:45 +0430</pubDate>
+    <lastBuildDate>Sun, 29 Mar 2020 10:37:45 +0430</lastBuildDate>
     <generator>Jekyll v3.8.5</generator>
+    
+      <item>
+        <title>Decrypting NetWire's keylog files</title>
+        <description>&lt;p&gt;NetWire is recently back to the malware trends again. This new variant of NetWire uses Guloader to distribute itself. After some observation, it seems that NetWire creators changed the encryption routine. In this analysis, I am going to present you how to reverse the new encryption routine and get a clean version of the keylog file.&lt;/p&gt;
+
+&lt;h3 id=&quot;background&quot;&gt;Background&lt;/h3&gt;
+
+&lt;p&gt;According to the malpedia:&lt;/p&gt;
+&lt;blockquote&gt;
+  &lt;p&gt;Netwire is a RAT, its functionality seems focused on password stealing and keylogging, but includes remote control capabilities as well.
+Keylog files are stored on the infected machine in an obfuscated form. &lt;a href=&quot;https://malpedia.caad.fkie.fraunhofer.de/details/win.netwire&quot;&gt;link!&lt;/a&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Netwire has lots of functionalities such as taking remote control of infected PCs, keylogging, taking screenshots and extracting system information. NetWire creators added multiple data encryption layers to make a hard time for researchers. there are some sources out there about the decryption of implemented custom C&amp;amp;C binary protocol but there are limited sources (almost nothing) about decrypting keylog files.&lt;/p&gt;
+
+&lt;h3 id=&quot;netwire-encryption-routine&quot;&gt;NetWire encryption routine&lt;/h3&gt;
+
+&lt;p&gt;Let’s follow the white rabbit down to the rabbit hole. After execution, NetWire makes a folder at &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;%APPDATA%/Logs&lt;/code&gt; and saves keylog files there. I won’t analyze the whole malware in this blog post, only the encryption routine since with some search, you can find public researchers about analyzing NetWire.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/img/netwire-decrypting-keylog-file1.png&quot; alt=&quot;keylog file in windows explore&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;We need to open NetWire in a disassembler (ida free will be enough) and find the correct function that writes to the log file. To achieve this goal we can look at the import section and search for &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;WriteFile&lt;/code&gt; Windows API call. xrefing shows there are 2 locations that &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;WriteFile&lt;/code&gt; got used.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/img/netwire-decrypting-keylog-file2.png&quot; alt=&quot;ida xref WriteFile&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Let’s look at the first one.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/img/netwire-decrypting-keylog-file3.png&quot; alt=&quot;ida disassembly window&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Dissecting more shows us an interesting string. Probably in this block, NetWire tries to generate keylog file names like what we saw earlier.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/img/netwire-decrypting-keylog-file4.png&quot; alt=&quot;interesting string &quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;So Let’s assume this is the right one and dig in more. To cheat we can fire up Ghidra with default config and try to analyze decompiled version of this function.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/img/netwire-decrypting-keylog-file5.png&quot; alt=&quot;ghidra decompile window&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;We can clean up the code to make it more human-readable. Investigating more shows us an interesting piece of code at the middle of the function. to make it more complicated NetWire tries to load every buffer in 4-bit chunks and do encryption stuff at every bit separately.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/img/netwire-decrypting-keylog-file6.png&quot; alt=&quot;encryption routine&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;And to make things clear we can estimate the algorithm is something like this:&lt;/p&gt;
+
+&lt;div class=&quot;language-python highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;
+&lt;span class=&quot;k&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;index&lt;/span&gt; &lt;span class=&quot;ow&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;range&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;number_of_bytes_to_write&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;):&lt;/span&gt;
+    &lt;span class=&quot;nb&quot;&gt;buffer&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;index&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;buffer&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;index&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;^&lt;/span&gt; &lt;span class=&quot;mh&quot;&gt;0x9D&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;mh&quot;&gt;0x24&lt;/span&gt;
+
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Reversing this opration is easy. we need to do an operation like this:&lt;/p&gt;
+
+&lt;div class=&quot;language-python highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;buffer&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;index&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;mh&quot;&gt;0x24&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;^&lt;/span&gt; &lt;span class=&quot;mh&quot;&gt;0x9D&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h3 id=&quot;netwire-decryptor&quot;&gt;NetWire decryptor&lt;/h3&gt;
+
+&lt;p&gt;I wrote a small python script that you can find &lt;a href=&quot;https://github.com/lopqto/YaraRules/blob/master/malwares/netwire/decrypt_netwire.py&quot;&gt;here&lt;/a&gt;. Just pass the filename as argv and you can get the decrypted version of the keylog file in output.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/img/netwire-decrypting-keylog-file7.png&quot; alt=&quot;decryption example&quot; /&gt;&lt;/p&gt;
+
+&lt;h3 id=&quot;read-more&quot;&gt;Read more&lt;/h3&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;a href=&quot;https://any.run/malware-trends/netwire&quot;&gt;Netwire at any.run&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://malpedia.caad.fkie.fraunhofer.de/details/win.netwire&quot;&gt;Netwire RC at malpedia&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+</description>
+        <pubDate>Sun, 29 Mar 2020 04:30:00 +0430</pubDate>
+        <link>https://lopqto.me/posts/netwire-decrypting-keylog-file</link>
+        <guid isPermaLink="true">https://lopqto.me/posts/netwire-decrypting-keylog-file</guid>
+        
+        
+        <category>reverse-engineering</category>
+        
+        <category>malware-analysis</category>
+        
+      </item>
     
       <item>
         <title>Crackmes for lazies: angr demonstration</title>
