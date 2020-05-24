@@ -1,53 +1,4 @@
-<!DOCTYPE html>
-<html>
-
-  <head>
-  <meta charset="utf-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-
-  <title>Frida by example: bypassing IsDebuggerPresent() check « lopqto's adventures</title>
-  <meta name="description" content="Almost every malware exists out there has a functionally to make the post-detection analysis more difficult. Threat actors use various anti-debugging techniq...">
-
-  <link rel="stylesheet" href="/css/main.css">
-  <link rel="canonical" href="http://localhost:4000/posts/frida-by-example">
-  <link rel="shortcut icon" type="image/png" href="favicon.png">
-  <link rel="alternate" type="application/rss+xml" title="lopqto's adventures" href="http://localhost:4000/feed.xml" />
-</head>
-
-
-  <body>
-
-    <div class="header-placeholder"></div>
-<header class="header">
-  <div class="wrapper">
-    <div id="sidebar-toggle">TOC</div>
-    <a class="site-title" href="/">lopqto's adventures</a>
-    <nav class="site-nav">
-      
-        
-        <a class="page-link" href="/about/">About</a>
-      
-        
-        <a class="page-link" href="/category/">Category</a>
-      
-    </nav>
-  </div>
-</header>
-
-
-    <div class="page-content">
-      <div class="wrapper">
-        <div class="col-main">
-          <div class="post">
-
-  <header class="post-header">
-    <h1 class="post-title">Frida by example: bypassing IsDebuggerPresent() check</h1>
-    <p class="post-meta">Apr 20, 2019</p>
-  </header>
-
-  <article class="post-content">
-    <p>Almost every malware exists out there has a functionally to make the post-detection analysis more difficult. Threat actors use various anti-debugging techniques, one of the more common ones used to check whether a debugger is on via IsDebuggerPresent() Windows API call. In this blog post, we will discuss how to bypass this technique by Frida.</p>
+<p>Almost every malware exists out there has a functionally to make the post-detection analysis more difficult. Threat actors use various anti-debugging techniques, one of the more common ones used to check whether a debugger is on via IsDebuggerPresent() Windows API call. In this blog post, we will discuss how to bypass this technique by Frida.</p>
 
 <h3 id="why-frida">why Frida?</h3>
 <p>Frida is a dynamic instrumentation toolkit. It gives a simple interface where you can develop complex hooking logic rapidly and make changes to it as your requirements. Frida supports Windows, macOS, GNU/Linux, iOS, Android, and QNX.</p>
@@ -82,16 +33,16 @@
 <p>According to Microsoft docs, if the current process is not running in the context of a debugger, the return value will be zero.</p>
 
 <h3 id="bypassing-isdebuggerpresent">Bypassing IsDebuggerPresent()</h3>
-<p>First of all, you need to install Frida, start from here: <a href="https://www.frida.re/docs/installation/">documentation</a>. You can test your installation by running <code class="language-plaintext highlighter-rouge">frida-ps.exe</code> in Powershell or CMD.</p>
+<p>First of all, you need to install Frida, start from here: <a href="https://www.frida.re/docs/installation/">documentation</a>. You can test your installation by running <code class="highlighter-rouge">frida-ps.exe</code> in Powershell or CMD.</p>
 
 <p>How The Frida works? Frida will inject Google’s V8 engine to a specific process. After that it will run JavaScript code and generate a dynamic hook. Lets make our hand dirty and write some JavaScript codes. :)</p>
 
-<p>For hooking purpose we will use <code class="language-plaintext highlighter-rouge">Interceptor</code> API.</p>
+<p>For hooking purpose we will use <code class="highlighter-rouge">Interceptor</code> API.</p>
 <blockquote>
-  <p><code class="language-plaintext highlighter-rouge">Interceptor.attach(target, callbacks)</code>: intercept calls to <code class="language-plaintext highlighter-rouge">target</code> function. it’s a <code class="language-plaintext highlighter-rouge">NativePointer</code> specifying the address of the function you would like to intercept calls to.</p>
+  <p><code class="highlighter-rouge">Interceptor.attach(target, callbacks)</code>: intercept calls to <code class="highlighter-rouge">target</code> function. it’s a <code class="highlighter-rouge">NativePointer</code> specifying the address of the function you would like to intercept calls to.</p>
 </blockquote>
 
-<p>To begin, we need to find the address of <code class="language-plaintext highlighter-rouge">IsDebuggerPresent()</code> function by using <code class="language-plaintext highlighter-rouge">DebugSymbol</code> API.</p>
+<p>To begin, we need to find the address of <code class="highlighter-rouge">IsDebuggerPresent()</code> function by using <code class="highlighter-rouge">DebugSymbol</code> API.</p>
 
 <div class="language-javascript highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// poc.js</span>
 
@@ -99,7 +50,7 @@
 <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="dl">"</span><span class="s2">function address : </span><span class="dl">"</span> <span class="o">+</span> <span class="nx">isDebuggerPresentAddr</span><span class="p">)</span>
 </code></pre></div></div>
 
-<p>Using the <code class="language-plaintext highlighter-rouge">Interceptor</code>, we can quickly hook the application and write some basic JS to make <code class="language-plaintext highlighter-rouge">IsDebuggerPresnt</code> to always return 0. Notice the use of <code class="language-plaintext highlighter-rouge">isDebuggerPresentAddr</code> in the code.</p>
+<p>Using the <code class="highlighter-rouge">Interceptor</code>, we can quickly hook the application and write some basic JS to make <code class="highlighter-rouge">IsDebuggerPresnt</code> to always return 0. Notice the use of <code class="highlighter-rouge">isDebuggerPresentAddr</code> in the code.</p>
 
 <div class="language-javascript highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// poc.js</span>
 
@@ -113,13 +64,13 @@
 <span class="p">});</span>
 </code></pre></div></div>
 
-<p><code class="language-plaintext highlighter-rouge">retval</code> is a <code class="language-plaintext highlighter-rouge">NativePointer</code>-derived object containing the raw return value. We can use <code class="language-plaintext highlighter-rouge">replace()</code> to change the return value.</p>
+<p><code class="highlighter-rouge">retval</code> is a <code class="highlighter-rouge">NativePointer</code>-derived object containing the raw return value. We can use <code class="highlighter-rouge">replace()</code> to change the return value.</p>
 
 <p>Now it’s time to test the bypass method. First we spawn process without injecting our code:</p>
 
 <div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">frida.exe</span><span class="w"> </span><span class="o">.</span><span class="nx">\target.exe</span><span class="w">
 </span></code></pre></div></div>
-<p>Frida will stop on Entrypoint.Now try to attach your debugger to the <code class="language-plaintext highlighter-rouge">target.exe</code> process and then type <code class="language-plaintext highlighter-rouge">%resume</code> command to continue execution. debugger will be detected by the process.
+<p>Frida will stop on Entrypoint.Now try to attach your debugger to the <code class="highlighter-rouge">target.exe</code> process and then type <code class="highlighter-rouge">%resume</code> command to continue execution. debugger will be detected by the process.
 <img src="/img/frida-by-example1.png" alt="debugger got detect" />
 Run the following command to inject our code and bypass the check:</p>
 <div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">frida.exe</span><span class="w"> </span><span class="o">.</span><span class="nx">\target.exe</span><span class="w"> </span><span class="nt">-l</span><span class="w"> </span><span class="o">.</span><span class="nx">\poc.js</span><span class="w">
@@ -127,7 +78,7 @@ Run the following command to inject our code and bypass the check:</p>
 <p>You can see the result below.
 <img src="/img/frida-by-example2.png" alt="debugger not detect" /></p>
 
-<p>The <code class="language-plaintext highlighter-rouge">IsDebuggerPresent()</code> has been bypassed successfully. :)</p>
+<p>The <code class="highlighter-rouge">IsDebuggerPresent()</code> has been bypassed successfully. :)</p>
 
 <h3 id="references">References</h3>
 <ul>
@@ -139,66 +90,3 @@ Run the following command to inject our code and bypass the check:</p>
 <ul>
   <li><a href="https://blog.n0p.me/2018/03/2018-03-27-dynamic-binary-analysis/">Getting started with Dynamic Binary Analysis by Ali Mosajjal</a></li>
 </ul>
-
-  </article>
-  
-  
-
-
-
-
-</div>
-
-        </div>
-        <div class="col-second">
-          <div class="col-box col-box-author">
-  <img class="avatar" src="https://en.gravatar.com/userimage/156357779/a780a38ea0048d30d1aa273a4057f927.jpg?size=135" alt="Hamidreza Babaee">
-  <div class="col-box-title name">Hamidreza Babaee</div>
-  <p>deep dive into binaries.</p>
-  <p class="contact">
-    
-    
-    
-    <a href="mailto:morpix@protonmail.com">Email</a>
-    
-    <a href="https://github.com/lopqto">GitHub</a>
-    
-  </p>
-</div>
-
-<div class="col-box">
-  <div class="col-box-title">Newest Posts</div>
-  <ul class="post-list">
-    
-      <li><a class="post-link" href="/posts/automated-malware-unpacking">Automated malware unpacking with binary emulation</a></li>
-    
-      <li><a class="post-link" href="/posts/netwire-decrypting-keylog-file">Decrypting NetWire's keylog files</a></li>
-    
-      <li><a class="post-link" href="/posts/crackmes-for-lazies">Crackmes for lazies: angr demonstration</a></li>
-    
-      <li><a class="post-link" href="/posts/frida-by-example">Frida by example: bypassing IsDebuggerPresent() check</a></li>
-    
-  </ul>
-</div>
-
-<div class="col-box post-toc hide">
-  <div class="col-box-title">TOC</div>
-</div>
-
-        </div>
-      </div>
-    </div>
-
-    <footer class="footer">
-<div class="wrapper">
-&copy; 2020 Hamidreza Babaee
-</div>
-</footer>
-
-<script type="text/x-mathjax-config">MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$']]}});</script>
-<script src="/js/easybook.js"></script>
-
-
-  </body>
-
-</html>

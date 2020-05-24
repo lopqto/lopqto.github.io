@@ -1,0 +1,63 @@
+<p>NetWire is recently back to the malware trends again. This new variant of NetWire uses Guloader to distribute itself. After some observation, it seems that NetWire creators changed the encryption routine. In this analysis, I am going to present you how to reverse the new encryption routine and get a clean version of the keylog file.</p>
+
+<h3 id="background">Background</h3>
+
+<p>According to the malpedia:</p>
+<blockquote>
+  <p>Netwire is a RAT, its functionality seems focused on password stealing and keylogging, but includes remote control capabilities as well.
+Keylog files are stored on the infected machine in an obfuscated form. <a href="https://malpedia.caad.fkie.fraunhofer.de/details/win.netwire">link!</a></p>
+</blockquote>
+
+<p>Netwire has lots of functionalities such as taking remote control of infected PCs, keylogging, taking screenshots and extracting system information. NetWire creators added multiple data encryption layers to make a hard time for researchers. there are some sources out there about the decryption of implemented custom C&amp;C binary protocol but there are limited sources (almost nothing) about decrypting keylog files.</p>
+
+<h3 id="netwire-encryption-routine">NetWire encryption routine</h3>
+
+<p>Let’s follow the white rabbit down to the rabbit hole. After execution, NetWire makes a folder at <code class="highlighter-rouge">%APPDATA%/Logs</code> and saves keylog files there. I won’t analyze the whole malware in this blog post, only the encryption routine since with some search, you can find public researchers about analyzing NetWire.</p>
+
+<p><img src="/img/netwire-decrypting-keylog-file1.png" alt="keylog file in windows explore" /></p>
+
+<p>We need to open NetWire in a disassembler (ida free will be enough) and find the correct function that writes to the log file. To achieve this goal we can look at the import section and search for <code class="highlighter-rouge">WriteFile</code> Windows API call. xrefing shows there are 2 locations that <code class="highlighter-rouge">WriteFile</code> got used.</p>
+
+<p><img src="/img/netwire-decrypting-keylog-file2.png" alt="ida xref WriteFile" /></p>
+
+<p>Let’s look at the first one.</p>
+
+<p><img src="/img/netwire-decrypting-keylog-file3.png" alt="ida disassembly window" /></p>
+
+<p>Dissecting more shows us an interesting string. Probably in this block, NetWire tries to generate keylog file names like what we saw earlier.</p>
+
+<p><img src="/img/netwire-decrypting-keylog-file4.png" alt="interesting string " /></p>
+
+<p>So Let’s assume this is the right one and dig in more. To cheat we can fire up Ghidra with default config and try to analyze decompiled version of this function.</p>
+
+<p><img src="/img/netwire-decrypting-keylog-file5.png" alt="ghidra decompile window" /></p>
+
+<p>We can clean up the code to make it more human-readable. Investigating more shows us an interesting piece of code at the middle of the function. to make it more complicated NetWire tries to load every buffer in 4-bit chunks and do encryption stuff at every bit separately.</p>
+
+<p><img src="/img/netwire-decrypting-keylog-file6.png" alt="encryption routine" /></p>
+
+<p>And to make things clear we can estimate the algorithm is something like this:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="k">for</span> <span class="n">index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">number_of_bytes_to_write</span><span class="p">):</span>
+    <span class="nb">buffer</span><span class="p">[</span><span class="n">index</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span> <span class="nb">buffer</span><span class="p">[</span><span class="n">index</span><span class="p">]</span> <span class="o">^</span> <span class="mh">0x9D</span> <span class="p">)</span> <span class="o">+</span> <span class="mh">0x24</span>
+
+</code></pre></div></div>
+
+<p>Reversing this opration is easy. we need to do an operation like this:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">(</span><span class="nb">buffer</span><span class="p">[</span><span class="n">index</span><span class="p">]</span> <span class="o">-</span> <span class="mh">0x24</span><span class="p">)</span> <span class="o">^</span> <span class="mh">0x9D</span>
+</code></pre></div></div>
+
+<h3 id="netwire-decryptor">NetWire decryptor</h3>
+
+<p>I wrote a small python script that you can find <a href="https://github.com/lopqto/YaraRules/blob/master/malwares/netwire/decrypt_netwire.py">here</a>. Just pass the filename as argv and you can get the decrypted version of the keylog file in output.</p>
+
+<p><img src="/img/netwire-decrypting-keylog-file7.png" alt="decryption example" /></p>
+
+<h3 id="read-more">Read more</h3>
+
+<ul>
+  <li><a href="https://any.run/malware-trends/netwire">Netwire at any.run</a></li>
+  <li><a href="https://malpedia.caad.fkie.fraunhofer.de/details/win.netwire">Netwire RC at malpedia</a></li>
+</ul>
