@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  "Binary emulation intro - Automated dynamic import resolving"
+title:  "Automated dynamic import resolving using binary emulation"
 date:   2020-09-08 00:00:00
 categories: reverse-engineering malware-analysis
 permalink: /posts/automated-dynamic-import-resolving
