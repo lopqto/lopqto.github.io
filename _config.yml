@@ -14,8 +14,9 @@ profile: deep dive into binaries.
 #twitter_username: twitter_username
 #github_username:  lopqto
 profile_links:
-  Email: "mailto:morpix@protonmail.com"
+  Email: "mailto:morpix@pm.me"
   GitHub: "https://github.com/lopqto"
+  Twitter: "https://twitter.com/lopqto"
   # You can add more profile links above, or edit _includes/sidebar.html 
 
 # Comment Service (Disqus or 多说)

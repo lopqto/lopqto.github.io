@@ -10,9 +10,9 @@
   <meta name="description" content="Analyzing malwares is often not an easy task because there are lots of tricks and techniques that malwares use to evade detection and classification or to ma...">
 
   <link rel="stylesheet" href="/css/main.css">
-  <link rel="canonical" href="http://localhost:4000/posts/automated-dynamic-import-resolving">
+  <link rel="canonical" href="https://lopqto.me/posts/automated-dynamic-import-resolving">
   <link rel="shortcut icon" type="image/png" href="favicon.png">
-  <link rel="alternate" type="application/rss+xml" title="lopqto's adventures" href="http://localhost:4000/feed.xml" />
+  <link rel="alternate" type="application/rss+xml" title="lopqto's adventures" href="https://lopqto.me/feed.xml" />
 </head>
 
 
@@ -136,7 +136,7 @@ Personally, I think this is an acceptable trade-off.</p>
 
 <p><img src="/img/daily-binary-emulation4.png" alt="start and end of the section" /></p>
 
-<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">ql</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">begin</span><span class="o">=</span><span class="mh">0x0040c1a0</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="mh">0x0040c1a5</span><span class="p">)</span>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">ql</span><span class="p">.</span><span class="n">run</span><span class="p">(</span><span class="n">begin</span><span class="o">=</span><span class="mh">0x0040c1a0</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="mh">0x0040c1a5</span><span class="p">)</span>
 </code></pre></div></div>
 
 <p>In this process of analyzing malwares with binary emulation, you need only be creative.
@@ -148,13 +148,13 @@ For example, in this sample, there are plenty of approaches that you can use; ho
 
 <p>We can run the emulator and try to <code class="language-plaintext highlighter-rouge">hook_code()</code> to catch every instruction that is going to be executed.</p>
 
-<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">ql</span><span class="o">.</span><span class="n">hook_code</span><span class="p">(</span><span class="n">extract_eax</span><span class="p">)</span>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">ql</span><span class="p">.</span><span class="n">hook_code</span><span class="p">(</span><span class="n">extract_eax</span><span class="p">)</span>
 </code></pre></div></div>
 
 <p>As you may notice, <code class="language-plaintext highlighter-rouge">extract_eax()</code> is a callback function that is designed to extract the value of <code class="language-plaintext highlighter-rouge">eax</code>. Qiling will pass the <code class="language-plaintext highlighter-rouge">ql</code> (sandbox) object, the <code class="language-plaintext highlighter-rouge">address</code> and the <code class="language-plaintext highlighter-rouge">size</code> of the instruction to this callback function.</p>
 
 <p>We can extract the instruction inside <code class="language-plaintext highlighter-rouge">extract_eax()</code> with <code class="language-plaintext highlighter-rouge">mem.read()</code> as below:</p>
-<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">buf</span> <span class="o">=</span> <span class="n">ql</span><span class="o">.</span><span class="n">mem</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">address</span><span class="p">,</span> <span class="n">size</span><span class="p">)</span>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">buf</span> <span class="o">=</span> <span class="n">ql</span><span class="p">.</span><span class="n">mem</span><span class="p">.</span><span class="n">read</span><span class="p">(</span><span class="n">address</span><span class="p">,</span> <span class="n">size</span><span class="p">)</span>
 </code></pre></div></div>
 <p><code class="language-plaintext highlighter-rouge">buf</code> is a Python <code class="language-plaintext highlighter-rouge">bytearray</code> of our instruction. The next step is detecting the right location to extract <code class="language-plaintext highlighter-rouge">eax</code>. By looking at the disassembler we can see a pattern. the first part of the opcode is similar.</p>
 
@@ -162,35 +162,35 @@ For example, in this sample, there are plenty of approaches that you can use; ho
 
 <p>Next <code class="language-plaintext highlighter-rouge">if</code> will detect the right location:</p>
 
-<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">if</span> <span class="s">"8941"</span> <span class="ow">in</span> <span class="n">buf</span><span class="o">.</span><span class="nb">hex</span><span class="p">():</span>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">if</span> <span class="s">"8941"</span> <span class="ow">in</span> <span class="n">buf</span><span class="p">.</span><span class="nb">hex</span><span class="p">():</span>
 </code></pre></div></div>
 
 <p>to extract <code class="language-plaintext highlighter-rouge">eax</code> value we need to do this:</p>
 
-<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">eax_value</span> <span class="o">=</span> <span class="n">ql</span><span class="o">.</span><span class="n">reg</span><span class="o">.</span><span class="n">eax</span>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">eax_value</span> <span class="o">=</span> <span class="n">ql</span><span class="p">.</span><span class="n">reg</span><span class="p">.</span><span class="n">eax</span>
 </code></pre></div></div>
 
 <p><code class="language-plaintext highlighter-rouge">eax_value</code> is an address that points to an API call. We can search that address inside <code class="language-plaintext highlighter-rouge">import_symbols</code> to extract the API name.</p>
 
-<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">func</span> <span class="o">=</span> <span class="n">ql</span><span class="o">.</span><span class="n">loader</span><span class="o">.</span><span class="n">import_symbols</span><span class="p">[</span><span class="n">eax_value</span><span class="p">]</span>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">func</span> <span class="o">=</span> <span class="n">ql</span><span class="p">.</span><span class="n">loader</span><span class="p">.</span><span class="n">import_symbols</span><span class="p">[</span><span class="n">eax_value</span><span class="p">]</span>
 <span class="n">func_dll</span> <span class="o">=</span> <span class="n">func</span><span class="p">[</span><span class="s">"dll"</span><span class="p">]</span>
-<span class="n">func_name</span> <span class="o">=</span> <span class="n">func</span><span class="p">[</span><span class="s">"name"</span><span class="p">]</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s">"ascii"</span><span class="p">)</span>
+<span class="n">func_name</span> <span class="o">=</span> <span class="n">func</span><span class="p">[</span><span class="s">"name"</span><span class="p">].</span><span class="n">decode</span><span class="p">(</span><span class="s">"ascii"</span><span class="p">)</span>
 
-<span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s">"found {func_dll}.{func_name} at {hex(address)}"</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="sa">f</span><span class="s">"found </span><span class="si">{</span><span class="n">func_dll</span><span class="si">}</span><span class="s">.</span><span class="si">{</span><span class="n">func_name</span><span class="si">}</span><span class="s"> at </span><span class="si">{</span><span class="nb">hex</span><span class="p">(</span><span class="n">address</span><span class="p">)</span><span class="si">}</span><span class="s">"</span><span class="p">)</span>
 </code></pre></div></div>
 
 <p>Fulll code will be:</p>
 
 <div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">extract_eax</span><span class="p">(</span><span class="n">ql</span><span class="p">,</span> <span class="n">address</span><span class="p">,</span> <span class="n">size</span><span class="p">):</span>
-    <span class="n">buf</span> <span class="o">=</span> <span class="n">ql</span><span class="o">.</span><span class="n">mem</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">address</span><span class="p">,</span> <span class="n">size</span><span class="p">)</span>
+    <span class="n">buf</span> <span class="o">=</span> <span class="n">ql</span><span class="p">.</span><span class="n">mem</span><span class="p">.</span><span class="n">read</span><span class="p">(</span><span class="n">address</span><span class="p">,</span> <span class="n">size</span><span class="p">)</span>
 
-    <span class="k">if</span> <span class="s">"8941"</span> <span class="ow">in</span> <span class="n">buf</span><span class="o">.</span><span class="nb">hex</span><span class="p">():</span> <span class="c1"># dword ptr [ECX + hex],EAX
-</span>        <span class="n">eax_value</span> <span class="o">=</span> <span class="n">ql</span><span class="o">.</span><span class="n">reg</span><span class="o">.</span><span class="n">eax</span>
-        <span class="n">func</span> <span class="o">=</span> <span class="n">ql</span><span class="o">.</span><span class="n">loader</span><span class="o">.</span><span class="n">import_symbols</span><span class="p">[</span><span class="n">eax_value</span><span class="p">]</span>
+    <span class="k">if</span> <span class="s">"8941"</span> <span class="ow">in</span> <span class="n">buf</span><span class="p">.</span><span class="nb">hex</span><span class="p">():</span> <span class="c1"># dword ptr [ECX + hex],EAX
+</span>        <span class="n">eax_value</span> <span class="o">=</span> <span class="n">ql</span><span class="p">.</span><span class="n">reg</span><span class="p">.</span><span class="n">eax</span>
+        <span class="n">func</span> <span class="o">=</span> <span class="n">ql</span><span class="p">.</span><span class="n">loader</span><span class="p">.</span><span class="n">import_symbols</span><span class="p">[</span><span class="n">eax_value</span><span class="p">]</span>
         <span class="n">func_dll</span> <span class="o">=</span> <span class="n">func</span><span class="p">[</span><span class="s">"dll"</span><span class="p">]</span>
-        <span class="n">func_name</span> <span class="o">=</span> <span class="n">func</span><span class="p">[</span><span class="s">"name"</span><span class="p">]</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s">"ascii"</span><span class="p">)</span>
+        <span class="n">func_name</span> <span class="o">=</span> <span class="n">func</span><span class="p">[</span><span class="s">"name"</span><span class="p">].</span><span class="n">decode</span><span class="p">(</span><span class="s">"ascii"</span><span class="p">)</span>
         
-        <span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s">"found {func_dll}.{func_name} at {hex(address)}"</span><span class="p">)</span>
+        <span class="k">print</span><span class="p">(</span><span class="sa">f</span><span class="s">"found </span><span class="si">{</span><span class="n">func_dll</span><span class="si">}</span><span class="s">.</span><span class="si">{</span><span class="n">func_name</span><span class="si">}</span><span class="s"> at </span><span class="si">{</span><span class="nb">hex</span><span class="p">(</span><span class="n">address</span><span class="p">)</span><span class="si">}</span><span class="s">"</span><span class="p">)</span>
 </code></pre></div></div>
 
 <p>This was easy! right? Next, we need to integrate our scipt with Ghidra to actually use the information we got here. This will help us to see extracted API names inside Ghidra.</p>
@@ -209,7 +209,7 @@ For example, in this sample, there are plenty of approaches that you can use; ho
 <div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">run_script</span><span class="p">(</span><span class="n">server_host</span><span class="p">,</span> <span class="n">server_port</span><span class="p">):</span>
 
     <span class="kn">import</span> <span class="nn">ghidra_bridge</span> 
-    <span class="k">with</span> <span class="n">ghidra_bridge</span><span class="o">.</span><span class="n">GhidraBridge</span><span class="p">(</span><span class="n">namespace</span><span class="o">=</span><span class="nb">globals</span><span class="p">(),</span> <span class="n">response_timeout</span><span class="o">=</span><span class="mi">500</span><span class="p">):</span>
+    <span class="k">with</span> <span class="n">ghidra_bridge</span><span class="p">.</span><span class="n">GhidraBridge</span><span class="p">(</span><span class="n">namespace</span><span class="o">=</span><span class="nb">globals</span><span class="p">(),</span> <span class="n">response_timeout</span><span class="o">=</span><span class="mi">500</span><span class="p">):</span>
         <span class="k">pass</span>
 
 
@@ -226,24 +226,24 @@ For example, in this sample, there are plenty of approaches that you can use; ho
 
     <span class="k">if</span> <span class="n">in_ghidra</span><span class="p">:</span>
         <span class="kn">import</span> <span class="nn">ghidra_bridge_server</span>
-        <span class="n">script_file</span> <span class="o">=</span> <span class="n">getSourceFile</span><span class="p">()</span><span class="o">.</span><span class="n">getAbsolutePath</span><span class="p">()</span>
+        <span class="n">script_file</span> <span class="o">=</span> <span class="n">getSourceFile</span><span class="p">().</span><span class="n">getAbsolutePath</span><span class="p">()</span>
         <span class="c1"># spin up a ghidra_bridge_server and spawn the script in external python to connect back to it
-</span>        <span class="n">ghidra_bridge_server</span><span class="o">.</span><span class="n">GhidraBridgeServer</span><span class="o">.</span><span class="n">run_script_across_ghidra_bridge</span><span class="p">(</span><span class="n">script_file</span><span class="p">)</span>
+</span>        <span class="n">ghidra_bridge_server</span><span class="p">.</span><span class="n">GhidraBridgeServer</span><span class="p">.</span><span class="n">run_script_across_ghidra_bridge</span><span class="p">(</span><span class="n">script_file</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="c1"># we're being run outside ghidra! (almost certainly from spawned by run_script_across_ghidra_bridge())
 </span>
-        <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span>
+        <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="p">.</span><span class="n">ArgumentParser</span><span class="p">(</span>
             <span class="n">description</span><span class="o">=</span><span class="s">"py3 script that's expected to be called from ghidra with a bridge"</span><span class="p">)</span>
         <span class="c1"># the script needs to handle these command-line arguments and use them to connect back to the ghidra server that spawned it
-</span>        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">"--connect_to_host"</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
+</span>        <span class="n">parser</span><span class="p">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">"--connect_to_host"</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span>
                             <span class="n">default</span><span class="o">=</span><span class="s">"127.0.0.1"</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s">"IP to connect to the ghidra_bridge server"</span><span class="p">)</span>
-        <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">"--connect_to_port"</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+        <span class="n">parser</span><span class="p">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s">"--connect_to_port"</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
                             <span class="n">help</span><span class="o">=</span><span class="s">"Port to connect to the ghidra_bridge server"</span><span class="p">)</span>
 
-        <span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+        <span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="p">.</span><span class="n">parse_args</span><span class="p">()</span>
 
-        <span class="n">run_script</span><span class="p">(</span><span class="n">server_host</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">connect_to_host</span><span class="p">,</span>
-                   <span class="n">server_port</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">connect_to_port</span><span class="p">)</span>
+        <span class="n">run_script</span><span class="p">(</span><span class="n">server_host</span><span class="o">=</span><span class="n">args</span><span class="p">.</span><span class="n">connect_to_host</span><span class="p">,</span>
+                   <span class="n">server_port</span><span class="o">=</span><span class="n">args</span><span class="p">.</span><span class="n">connect_to_port</span><span class="p">)</span>
 </code></pre></div></div>
 
 <p>We only need to focus on <code class="language-plaintext highlighter-rouge">run_script()</code> function. The other part is static and probably there is no need to change. Only inside <code class="language-plaintext highlighter-rouge">run_script()</code> you are allowed to use Python 3 syntax and only here you are allowed to load Python 3 libraries (like Qiling). As you may notice I added  <code class="language-plaintext highlighter-rouge">response_timeout</code> to the <code class="language-plaintext highlighter-rouge">GhidraBridge</code> object and sets it’s value to 500 seconds. Why? because as we discussed earlier emulating is a time-consuming task and emulating decryptor functions is likely more time-consuming because there is so much instruction code that needs to be emulated. So we need to set <code class="language-plaintext highlighter-rouge">response_timeout</code> to prevent any timeout-related errors.</p>
@@ -254,53 +254,53 @@ For example, in this sample, there are plenty of approaches that you can use; ho
     <span class="kn">from</span> <span class="nn">qiling</span> <span class="kn">import</span> <span class="n">Qiling</span>
 
     <span class="kn">import</span> <span class="nn">ghidra_bridge</span> 
-    <span class="k">with</span> <span class="n">ghidra_bridge</span><span class="o">.</span><span class="n">GhidraBridge</span><span class="p">(</span><span class="n">namespace</span><span class="o">=</span><span class="nb">globals</span><span class="p">(),</span> <span class="n">response_timeout</span><span class="o">=</span><span class="mi">500</span><span class="p">):</span>
+    <span class="k">with</span> <span class="n">ghidra_bridge</span><span class="p">.</span><span class="n">GhidraBridge</span><span class="p">(</span><span class="n">namespace</span><span class="o">=</span><span class="nb">globals</span><span class="p">(),</span> <span class="n">response_timeout</span><span class="o">=</span><span class="mi">500</span><span class="p">):</span>
 
         <span class="n">ql</span> <span class="o">=</span> <span class="n">Qiling</span><span class="p">([</span><span class="s">"/home/lopqto/w/automated/samples/netwalker.exe"</span><span class="p">],</span> <span class="s">"/home/lopqto/w/automated/rootfs/x86_windows"</span><span class="p">,</span> <span class="n">output</span> <span class="o">=</span> <span class="s">"debug"</span><span class="p">)</span>
-        <span class="n">ql</span><span class="o">.</span><span class="n">hook_code</span><span class="p">(</span><span class="n">extract_eax</span><span class="p">)</span>
-        <span class="n">ql</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">begin</span><span class="o">=</span><span class="mh">0x0040c1a0</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="mh">0x0040c1a5</span><span class="p">)</span>
+        <span class="n">ql</span><span class="p">.</span><span class="n">hook_code</span><span class="p">(</span><span class="n">extract_eax</span><span class="p">)</span>
+        <span class="n">ql</span><span class="p">.</span><span class="n">run</span><span class="p">(</span><span class="n">begin</span><span class="o">=</span><span class="mh">0x0040c1a0</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="mh">0x0040c1a5</span><span class="p">)</span>
 </code></pre></div></div>
 
 <p>Back to the <code class="language-plaintext highlighter-rouge">extract_eax()</code> function, we need to integrate it with Ghidra and add extracted API names as a comment into Ghidra. To add a comment from a script first of all we need an address (location). We have the <code class="language-plaintext highlighter-rouge">address</code> value from Qiling but we need to convert this value to Ghidra’s <code class="language-plaintext highlighter-rouge">Address</code> type.</p>
 
 <p>To do this we need <code class="language-plaintext highlighter-rouge">memory.blocks</code> object from <code class="language-plaintext highlighter-rouge">currentProgram</code> API. But there is a challenge here. <code class="language-plaintext highlighter-rouge">currentProgram</code> API only is accessible inside <code class="language-plaintext highlighter-rouge">run_script()</code>. But we need this API inside <code class="language-plaintext highlighter-rouge">extract_eax()</code> callback. There is a cool trick to handle this situation. You need to pass things around with <code class="language-plaintext highlighter-rouge">ql</code> object like below:</p>
 
-<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">ql</span><span class="o">.</span><span class="n">target_block</span> <span class="o">=</span> <span class="n">currentProgram</span><span class="o">.</span><span class="n">memory</span><span class="o">.</span><span class="n">blocks</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">ql</span><span class="p">.</span><span class="n">target_block</span> <span class="o">=</span> <span class="n">currentProgram</span><span class="p">.</span><span class="n">memory</span><span class="p">.</span><span class="n">blocks</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
 </code></pre></div></div>
 
 <p>Now we can access to <code class="language-plaintext highlighter-rouge">ql.target_block</code> inside <code class="language-plaintext highlighter-rouge">extract_eax()</code>. <code class="language-plaintext highlighter-rouge">target_block</code> (<code class="language-plaintext highlighter-rouge">memory.blocks[0]</code>) points to the PE entrypoint at <code class="language-plaintext highlighter-rouge">0x00400000</code>. to convert <code class="language-plaintext highlighter-rouge">address</code> to <code class="language-plaintext highlighter-rouge">Address</code> type we need to calculate offset and do something like this:</p>
 
-<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">target_address</span> <span class="o">=</span> <span class="n">ql</span><span class="o">.</span><span class="n">target_block</span><span class="o">.</span><span class="n">getStart</span><span class="p">()</span>
-<span class="n">target_address</span> <span class="o">=</span> <span class="n">target_address</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">address</span> <span class="o">-</span> <span class="mh">0x00400000</span><span class="p">)</span>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">target_address</span> <span class="o">=</span> <span class="n">ql</span><span class="p">.</span><span class="n">target_block</span><span class="p">.</span><span class="n">getStart</span><span class="p">()</span>
+<span class="n">target_address</span> <span class="o">=</span> <span class="n">target_address</span><span class="p">.</span><span class="n">add</span><span class="p">(</span><span class="n">address</span> <span class="o">-</span> <span class="mh">0x00400000</span><span class="p">)</span>
 </code></pre></div></div>
 
 <p>Now we have our <code class="language-plaintext highlighter-rouge">target_address</code> so we need one more step. accessing comment API is similar to above. First we need <code class="language-plaintext highlighter-rouge">getListring()</code> object:</p>
 
-<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">ql</span><span class="o">.</span><span class="n">listing</span> <span class="o">=</span> <span class="n">currentProgram</span><span class="o">.</span><span class="n">getListing</span><span class="p">()</span>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">ql</span><span class="p">.</span><span class="n">listing</span> <span class="o">=</span> <span class="n">currentProgram</span><span class="p">.</span><span class="n">getListing</span><span class="p">()</span>
 </code></pre></div></div>
 
 <p>And to add a comment we can do:</p>
 
-<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">codeUnit</span> <span class="o">=</span> <span class="n">ql</span><span class="o">.</span><span class="n">listing</span><span class="o">.</span><span class="n">getCodeUnitAt</span><span class="p">(</span><span class="n">target_address</span><span class="p">)</span>
-<span class="n">comment_message</span> <span class="o">=</span> <span class="s">"{}.{}"</span><span class="o">.</span><span class="nb">format</span><span class="p">(</span><span class="n">func_dll</span><span class="p">,</span> <span class="n">func_name</span><span class="p">)</span>
-<span class="n">codeUnit</span><span class="o">.</span><span class="n">setComment</span><span class="p">(</span><span class="n">codeUnit</span><span class="o">.</span><span class="n">PRE_COMMENT</span><span class="p">,</span> <span class="n">comment_message</span><span class="p">)</span>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">codeUnit</span> <span class="o">=</span> <span class="n">ql</span><span class="p">.</span><span class="n">listing</span><span class="p">.</span><span class="n">getCodeUnitAt</span><span class="p">(</span><span class="n">target_address</span><span class="p">)</span>
+<span class="n">comment_message</span> <span class="o">=</span> <span class="s">"{}.{}"</span><span class="p">.</span><span class="nb">format</span><span class="p">(</span><span class="n">func_dll</span><span class="p">,</span> <span class="n">func_name</span><span class="p">)</span>
+<span class="n">codeUnit</span><span class="p">.</span><span class="n">setComment</span><span class="p">(</span><span class="n">codeUnit</span><span class="p">.</span><span class="n">PRE_COMMENT</span><span class="p">,</span> <span class="n">comment_message</span><span class="p">)</span>
 </code></pre></div></div>
 
 <p>Full source code for <code class="language-plaintext highlighter-rouge">extract_eax()</code> will be this:</p>
 
 <div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">extract_eax</span><span class="p">(</span><span class="n">ql</span><span class="p">,</span> <span class="n">address</span><span class="p">,</span> <span class="n">size</span><span class="p">):</span>
-    <span class="n">buf</span> <span class="o">=</span> <span class="n">ql</span><span class="o">.</span><span class="n">mem</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">address</span><span class="p">,</span> <span class="n">size</span><span class="p">)</span>
-    <span class="k">if</span> <span class="s">"8941"</span> <span class="ow">in</span> <span class="n">buf</span><span class="o">.</span><span class="nb">hex</span><span class="p">():</span> <span class="c1"># dword ptr [ECX + hex],EAX
+    <span class="n">buf</span> <span class="o">=</span> <span class="n">ql</span><span class="p">.</span><span class="n">mem</span><span class="p">.</span><span class="n">read</span><span class="p">(</span><span class="n">address</span><span class="p">,</span> <span class="n">size</span><span class="p">)</span>
+    <span class="k">if</span> <span class="s">"8941"</span> <span class="ow">in</span> <span class="n">buf</span><span class="p">.</span><span class="nb">hex</span><span class="p">():</span> <span class="c1"># dword ptr [ECX + hex],EAX
 </span>        
-        <span class="n">eax_value</span> <span class="o">=</span> <span class="n">ql</span><span class="o">.</span><span class="n">reg</span><span class="o">.</span><span class="n">eax</span>
-        <span class="n">func</span> <span class="o">=</span> <span class="n">ql</span><span class="o">.</span><span class="n">loader</span><span class="o">.</span><span class="n">import_symbols</span><span class="p">[</span><span class="n">eax_value</span><span class="p">]</span>
+        <span class="n">eax_value</span> <span class="o">=</span> <span class="n">ql</span><span class="p">.</span><span class="n">reg</span><span class="p">.</span><span class="n">eax</span>
+        <span class="n">func</span> <span class="o">=</span> <span class="n">ql</span><span class="p">.</span><span class="n">loader</span><span class="p">.</span><span class="n">import_symbols</span><span class="p">[</span><span class="n">eax_value</span><span class="p">]</span>
         <span class="n">func_dll</span> <span class="o">=</span> <span class="n">func</span><span class="p">[</span><span class="s">"dll"</span><span class="p">]</span>
-        <span class="n">func_name</span> <span class="o">=</span> <span class="n">func</span><span class="p">[</span><span class="s">"name"</span><span class="p">]</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s">"ascii"</span><span class="p">)</span>
-        <span class="n">target_address</span> <span class="o">=</span> <span class="n">ql</span><span class="o">.</span><span class="n">target_block</span><span class="o">.</span><span class="n">getStart</span><span class="p">()</span>
-        <span class="n">target_address</span> <span class="o">=</span> <span class="n">target_address</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">address</span> <span class="o">-</span> <span class="mh">0x00400000</span><span class="p">)</span>
-        <span class="n">codeUnit</span> <span class="o">=</span> <span class="n">ql</span><span class="o">.</span><span class="n">listing</span><span class="o">.</span><span class="n">getCodeUnitAt</span><span class="p">(</span><span class="n">target_address</span><span class="p">)</span>
-        <span class="n">comment</span> <span class="o">=</span> <span class="s">"{}.{}"</span><span class="o">.</span><span class="nb">format</span><span class="p">(</span><span class="n">func_dll</span><span class="p">,</span> <span class="n">func_name</span><span class="p">)</span>
-        <span class="n">codeUnit</span><span class="o">.</span><span class="n">setComment</span><span class="p">(</span><span class="n">codeUnit</span><span class="o">.</span><span class="n">PRE_COMMENT</span><span class="p">,</span> <span class="n">comment</span><span class="p">)</span>
+        <span class="n">func_name</span> <span class="o">=</span> <span class="n">func</span><span class="p">[</span><span class="s">"name"</span><span class="p">].</span><span class="n">decode</span><span class="p">(</span><span class="s">"ascii"</span><span class="p">)</span>
+        <span class="n">target_address</span> <span class="o">=</span> <span class="n">ql</span><span class="p">.</span><span class="n">target_block</span><span class="p">.</span><span class="n">getStart</span><span class="p">()</span>
+        <span class="n">target_address</span> <span class="o">=</span> <span class="n">target_address</span><span class="p">.</span><span class="n">add</span><span class="p">(</span><span class="n">address</span> <span class="o">-</span> <span class="mh">0x00400000</span><span class="p">)</span>
+        <span class="n">codeUnit</span> <span class="o">=</span> <span class="n">ql</span><span class="p">.</span><span class="n">listing</span><span class="p">.</span><span class="n">getCodeUnitAt</span><span class="p">(</span><span class="n">target_address</span><span class="p">)</span>
+        <span class="n">comment</span> <span class="o">=</span> <span class="s">"{}.{}"</span><span class="p">.</span><span class="nb">format</span><span class="p">(</span><span class="n">func_dll</span><span class="p">,</span> <span class="n">func_name</span><span class="p">)</span>
+        <span class="n">codeUnit</span><span class="p">.</span><span class="n">setComment</span><span class="p">(</span><span class="n">codeUnit</span><span class="p">.</span><span class="n">PRE_COMMENT</span><span class="p">,</span> <span class="n">comment</span><span class="p">)</span>
 </code></pre></div></div>
 
 <p>Now we have a Ghidra script that will use Python3 to run samples trough Qiling and extract dynamic resolved function names and comment them into Ghidra. See the final result:</p>
@@ -315,11 +315,11 @@ For example, in this sample, there are plenty of approaches that you can use; ho
 <div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">md</span> <span class="o">=</span> <span class="n">Cs</span><span class="p">(</span><span class="n">CS_ARCH_X86</span><span class="p">,</span> <span class="n">CS_MODE_64</span><span class="p">)</span>
 
 <span class="k">def</span> <span class="nf">print_asm</span><span class="p">(</span><span class="n">ql</span><span class="p">,</span> <span class="n">address</span><span class="p">,</span> <span class="n">size</span><span class="p">):</span>
-    <span class="n">buf</span> <span class="o">=</span> <span class="n">ql</span><span class="o">.</span><span class="n">mem</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">address</span><span class="p">,</span> <span class="n">size</span><span class="p">)</span>
-    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">md</span><span class="o">.</span><span class="n">disasm</span><span class="p">(</span><span class="n">buf</span><span class="p">,</span> <span class="n">address</span><span class="p">):</span>
-        <span class="k">print</span><span class="p">(</span><span class="s">":: 0x</span><span class="si">%</span><span class="s">x:</span><span class="se">\t</span><span class="si">%</span><span class="s">s</span><span class="se">\t</span><span class="si">%</span><span class="s">s"</span> <span class="o">%</span><span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">address</span><span class="p">,</span> <span class="n">i</span><span class="o">.</span><span class="n">mnemonic</span><span class="p">,</span> <span class="n">i</span><span class="o">.</span><span class="n">op_str</span><span class="p">))</span>
+    <span class="n">buf</span> <span class="o">=</span> <span class="n">ql</span><span class="p">.</span><span class="n">mem</span><span class="p">.</span><span class="n">read</span><span class="p">(</span><span class="n">address</span><span class="p">,</span> <span class="n">size</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">md</span><span class="p">.</span><span class="n">disasm</span><span class="p">(</span><span class="n">buf</span><span class="p">,</span> <span class="n">address</span><span class="p">):</span>
+        <span class="k">print</span><span class="p">(</span><span class="s">":: 0x%x:</span><span class="se">\t</span><span class="s">%s</span><span class="se">\t</span><span class="s">%s"</span> <span class="o">%</span><span class="p">(</span><span class="n">i</span><span class="p">.</span><span class="n">address</span><span class="p">,</span> <span class="n">i</span><span class="p">.</span><span class="n">mnemonic</span><span class="p">,</span> <span class="n">i</span><span class="p">.</span><span class="n">op_str</span><span class="p">))</span>
 
-<span class="n">ql</span><span class="o">.</span><span class="n">hook_code</span><span class="p">(</span><span class="n">print_asm</span><span class="p">)</span>
+<span class="n">ql</span><span class="p">.</span><span class="n">hook_code</span><span class="p">(</span><span class="n">print_asm</span><span class="p">)</span>
 </code></pre></div></div>
 
 <p>You can compare emulation result with your disassembler to debug your program.</p>
@@ -368,9 +368,11 @@ For example, in this sample, there are plenty of approaches that you can use; ho
     
     
     
-    <a href="mailto:morpix@protonmail.com">Email</a>
+    <a href="mailto:morpix@pm.me">Email</a>
     
     <a href="https://github.com/lopqto">GitHub</a>
+    
+    <a href="https://twitter.com/lopqto">Twitter</a>
     
   </p>
 </div>
@@ -402,7 +404,7 @@ For example, in this sample, there are plenty of approaches that you can use; ho
 
     <footer class="footer">
 <div class="wrapper">
-&copy; 2020 Hamidreza Babaee
+&copy; 2021 Hamidreza Babaee
 </div>
 </footer>
 

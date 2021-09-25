@@ -10,9 +10,9 @@
   <meta name="description" content="Almost every malware exists out there has a functionally to make the post-detection analysis more difficult. Threat actors use various anti-debugging techniq...">
 
   <link rel="stylesheet" href="/css/main.css">
-  <link rel="canonical" href="http://localhost:4000/posts/frida-by-example">
+  <link rel="canonical" href="https://lopqto.me/posts/frida-by-example">
   <link rel="shortcut icon" type="image/png" href="favicon.png">
-  <link rel="alternate" type="application/rss+xml" title="lopqto's adventures" href="http://localhost:4000/feed.xml" />
+  <link rel="alternate" type="application/rss+xml" title="lopqto's adventures" href="https://lopqto.me/feed.xml" />
 </head>
 
 
@@ -117,12 +117,12 @@
 
 <p>Now it’s time to test the bypass method. First we spawn process without injecting our code:</p>
 
-<div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">frida.exe</span><span class="w"> </span><span class="o">.</span><span class="nx">\target.exe</span><span class="w">
+<div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">frida.exe</span><span class="w"> </span><span class="o">.</span><span class="nx">\target.exe</span><span class="w">
 </span></code></pre></div></div>
 <p>Frida will stop on Entrypoint.Now try to attach your debugger to the <code class="language-plaintext highlighter-rouge">target.exe</code> process and then type <code class="language-plaintext highlighter-rouge">%resume</code> command to continue execution. debugger will be detected by the process.
 <img src="/img/frida-by-example1.png" alt="debugger got detect" />
 Run the following command to inject our code and bypass the check:</p>
-<div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nf">frida.exe</span><span class="w"> </span><span class="o">.</span><span class="nx">\target.exe</span><span class="w"> </span><span class="nt">-l</span><span class="w"> </span><span class="o">.</span><span class="nx">\poc.js</span><span class="w">
+<div class="language-powershell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">frida.exe</span><span class="w"> </span><span class="o">.</span><span class="nx">\target.exe</span><span class="w"> </span><span class="nt">-l</span><span class="w"> </span><span class="o">.</span><span class="nx">\poc.js</span><span class="w">
 </span></code></pre></div></div>
 <p>You can see the result below.
 <img src="/img/frida-by-example2.png" alt="debugger not detect" /></p>
@@ -159,9 +159,11 @@ Run the following command to inject our code and bypass the check:</p>
     
     
     
-    <a href="mailto:morpix@protonmail.com">Email</a>
+    <a href="mailto:morpix@pm.me">Email</a>
     
     <a href="https://github.com/lopqto">GitHub</a>
+    
+    <a href="https://twitter.com/lopqto">Twitter</a>
     
   </p>
 </div>
@@ -193,7 +195,7 @@ Run the following command to inject our code and bypass the check:</p>
 
     <footer class="footer">
 <div class="wrapper">
-&copy; 2020 Hamidreza Babaee
+&copy; 2021 Hamidreza Babaee
 </div>
 </footer>
 

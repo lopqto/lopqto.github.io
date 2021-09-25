@@ -10,9 +10,9 @@
   <meta name="description" content="I have been playing crackmes and CTFs all the time to boost my reverse engineering knowledge and learn new stuff, but there are times that you find some chal...">
 
   <link rel="stylesheet" href="/css/main.css">
-  <link rel="canonical" href="http://localhost:4000/posts/crackmes-for-lazies">
+  <link rel="canonical" href="https://lopqto.me/posts/crackmes-for-lazies">
   <link rel="shortcut icon" type="image/png" href="favicon.png">
-  <link rel="alternate" type="application/rss+xml" title="lopqto's adventures" href="http://localhost:4000/feed.xml" />
+  <link rel="alternate" type="application/rss+xml" title="lopqto's adventures" href="https://lopqto.me/feed.xml" />
 </head>
 
 
@@ -76,13 +76,13 @@
 <div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="nn">angr</span>
 <span class="kn">import</span> <span class="nn">claripy</span>
 
-<span class="n">project</span> <span class="o">=</span> <span class="n">angr</span><span class="o">.</span><span class="n">Project</span><span class="p">(</span><span class="s">'./keygen'</span><span class="p">,</span> <span class="n">load_options</span><span class="o">=</span><span class="p">{</span><span class="s">'auto_load_libs'</span><span class="p">:</span> <span class="bp">False</span><span class="p">})</span>
-<span class="n">argv1</span> <span class="o">=</span> <span class="n">claripy</span><span class="o">.</span><span class="n">BVS</span><span class="p">(</span><span class="s">'argv1'</span><span class="p">,</span> <span class="mh">0xF</span> <span class="o">*</span> <span class="mi">8</span><span class="p">)</span>
-<span class="n">initial_state</span> <span class="o">=</span> <span class="n">project</span><span class="o">.</span><span class="n">factory</span><span class="o">.</span><span class="n">entry_state</span><span class="p">(</span><span class="n">args</span><span class="o">=</span><span class="p">[</span><span class="s">'./keygen'</span><span class="p">,</span> <span class="n">argv1</span><span class="p">])</span> 
-<span class="n">sm</span> <span class="o">=</span> <span class="n">project</span><span class="o">.</span><span class="n">factory</span><span class="o">.</span><span class="n">simulation_manager</span><span class="p">(</span><span class="n">initial_state</span><span class="p">)</span>
-<span class="n">sm</span><span class="o">.</span><span class="n">explore</span><span class="p">(</span><span class="n">find</span><span class="o">=</span><span class="mh">0x401a5a</span><span class="p">,</span> <span class="n">avoid</span><span class="o">=</span><span class="mh">0x401a73</span><span class="p">)</span>
-<span class="n">result</span> <span class="o">=</span> <span class="n">sm</span><span class="o">.</span><span class="n">found</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-<span class="k">print</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">solver</span><span class="o">.</span><span class="nb">eval</span><span class="p">(</span><span class="n">argv1</span><span class="p">,</span> <span class="n">cast_to</span><span class="o">=</span><span class="nb">bytes</span><span class="p">))</span>
+<span class="n">project</span> <span class="o">=</span> <span class="n">angr</span><span class="p">.</span><span class="n">Project</span><span class="p">(</span><span class="s">'./keygen'</span><span class="p">,</span> <span class="n">load_options</span><span class="o">=</span><span class="p">{</span><span class="s">'auto_load_libs'</span><span class="p">:</span> <span class="bp">False</span><span class="p">})</span>
+<span class="n">argv1</span> <span class="o">=</span> <span class="n">claripy</span><span class="p">.</span><span class="n">BVS</span><span class="p">(</span><span class="s">'argv1'</span><span class="p">,</span> <span class="mh">0xF</span> <span class="o">*</span> <span class="mi">8</span><span class="p">)</span>
+<span class="n">initial_state</span> <span class="o">=</span> <span class="n">project</span><span class="p">.</span><span class="n">factory</span><span class="p">.</span><span class="n">entry_state</span><span class="p">(</span><span class="n">args</span><span class="o">=</span><span class="p">[</span><span class="s">'./keygen'</span><span class="p">,</span> <span class="n">argv1</span><span class="p">])</span> 
+<span class="n">sm</span> <span class="o">=</span> <span class="n">project</span><span class="p">.</span><span class="n">factory</span><span class="p">.</span><span class="n">simulation_manager</span><span class="p">(</span><span class="n">initial_state</span><span class="p">)</span>
+<span class="n">sm</span><span class="p">.</span><span class="n">explore</span><span class="p">(</span><span class="n">find</span><span class="o">=</span><span class="mh">0x401a5a</span><span class="p">,</span> <span class="n">avoid</span><span class="o">=</span><span class="mh">0x401a73</span><span class="p">)</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">sm</span><span class="p">.</span><span class="n">found</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="k">print</span><span class="p">(</span><span class="n">result</span><span class="p">.</span><span class="n">solver</span><span class="p">.</span><span class="nb">eval</span><span class="p">(</span><span class="n">argv1</span><span class="p">,</span> <span class="n">cast_to</span><span class="o">=</span><span class="nb">bytes</span><span class="p">))</span>
 </code></pre></div></div>
 <p>Now it’s the time to dissect the code. First of all, you need to install <code class="language-plaintext highlighter-rouge">angr</code> with <code class="language-plaintext highlighter-rouge">pip</code>. angr has dropped python2 support and you need python3 to use angr.</p>
 
@@ -95,11 +95,11 @@ pip3 <span class="nb">install </span>angr
   <p>The CFG analysis does not distinguish between code from different binary objects. This means that by default, it will try to analyze control flow through loaded shared libraries. Since processing the shared libraries will probably prolong the analysis to even days, it’s almost never intended behavior. To load a binary without shared libraries, add the following keyword argument to the Project constructor: <code class="language-plaintext highlighter-rouge">load_options={'auto_load_libs': False}</code>. <a href="https://docs.angr.io/built-in-analyses/cfg#shared-libraries">link!</a></p>
 </blockquote>
 
-<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">project</span> <span class="o">=</span> <span class="n">angr</span><span class="o">.</span><span class="n">Project</span><span class="p">(</span><span class="s">'./keygen'</span><span class="p">,</span> <span class="n">load_options</span><span class="o">=</span><span class="p">{</span><span class="s">'auto_load_libs'</span><span class="p">:</span> <span class="bp">False</span><span class="p">})</span>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">project</span> <span class="o">=</span> <span class="n">angr</span><span class="p">.</span><span class="n">Project</span><span class="p">(</span><span class="s">'./keygen'</span><span class="p">,</span> <span class="n">load_options</span><span class="o">=</span><span class="p">{</span><span class="s">'auto_load_libs'</span><span class="p">:</span> <span class="bp">False</span><span class="p">})</span>
 </code></pre></div></div>
 
 <p>After that, we need to define our input (<code class="language-plaintext highlighter-rouge">argv1</code>) as a symbolic value. <code class="language-plaintext highlighter-rouge">BVS</code> creates a 32-bit symbolic bit vector with the size of <code class="language-plaintext highlighter-rouge">0xF * 8</code>. you need to define the size equal or bigger than the correct input. <a href="https://docs.angr.io/built-in-analyses/cfg#shared-libraries">link!</a></p>
-<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">argv1</span> <span class="o">=</span> <span class="n">claripy</span><span class="o">.</span><span class="n">BVS</span><span class="p">(</span><span class="s">'argv1'</span><span class="p">,</span> <span class="mh">0xF</span> <span class="o">*</span> <span class="mi">8</span><span class="p">)</span>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">argv1</span> <span class="o">=</span> <span class="n">claripy</span><span class="p">.</span><span class="n">BVS</span><span class="p">(</span><span class="s">'argv1'</span><span class="p">,</span> <span class="mh">0xF</span> <span class="o">*</span> <span class="mi">8</span><span class="p">)</span>
 </code></pre></div></div>
 <p>angr has 4 initial states:</p>
 <ul>
@@ -118,7 +118,7 @@ When it is finished with these it will jump to the entry point.</li>
 
 <p>so in this line, we picked <code class="language-plaintext highlighter-rouge">entry_state</code> to pass the symbolic value <code class="language-plaintext highlighter-rouge">argv1</code>.</p>
 
-<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">initial_state</span> <span class="o">=</span> <span class="n">project</span><span class="o">.</span><span class="n">factory</span><span class="o">.</span><span class="n">entry_state</span><span class="p">(</span><span class="n">args</span><span class="o">=</span><span class="p">[</span><span class="s">'./keygen'</span><span class="p">,</span> <span class="n">argv1</span><span class="p">])</span> 
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">initial_state</span> <span class="o">=</span> <span class="n">project</span><span class="p">.</span><span class="n">factory</span><span class="p">.</span><span class="n">entry_state</span><span class="p">(</span><span class="n">args</span><span class="o">=</span><span class="p">[</span><span class="s">'./keygen'</span><span class="p">,</span> <span class="n">argv1</span><span class="p">])</span> 
 </code></pre></div></div>
 
 <blockquote>
@@ -127,14 +127,14 @@ When it is finished with these it will jump to the entry point.</li>
 
 <p>We need to define <code class="language-plaintext highlighter-rouge">SimulationManager</code> and path the <code class="language-plaintext highlighter-rouge">initial_state</code> to it.</p>
 
-<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">sm</span> <span class="o">=</span> <span class="n">project</span><span class="o">.</span><span class="n">factory</span><span class="o">.</span><span class="n">simulation_manager</span><span class="p">(</span><span class="n">initial_state</span><span class="p">)</span>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">sm</span> <span class="o">=</span> <span class="n">project</span><span class="p">.</span><span class="n">factory</span><span class="p">.</span><span class="n">simulation_manager</span><span class="p">(</span><span class="n">initial_state</span><span class="p">)</span>
 </code></pre></div></div>
 
 <p>An extremely common operation in symbolic execution is to find a state that reaches a certain address, while discarding all states that go through another address. Simulation manager has a shortcut for this pattern, the <code class="language-plaintext highlighter-rouge">.explore()</code> method.</p>
 
 <p>When launching <code class="language-plaintext highlighter-rouge">.explore()</code> with a <code class="language-plaintext highlighter-rouge">find</code> argument, execution will run until a state is found that matches the <code class="language-plaintext highlighter-rouge">find</code> condition. <code class="language-plaintext highlighter-rouge">find</code> condition can be the address of an instruction to stop, a list of addresses to stop, or a function which takes a state and returns whether it meets some criteria. When any of the states in the active stash match the find condition, they are placed in the <code class="language-plaintext highlighter-rouge">found</code> stash, and execution terminates. You can then explore the <code class="language-plaintext highlighter-rouge">found</code> state, or decide to discard it and continue with the other ones. You can also specify an <code class="language-plaintext highlighter-rouge">avoid</code> condition in the same format as <code class="language-plaintext highlighter-rouge">find</code>. When a state matches the <code class="language-plaintext highlighter-rouge">avoid</code> condition, it is put in the <code class="language-plaintext highlighter-rouge">avoided</code> stash, and execution continues.</p>
 
-<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">sm</span><span class="o">.</span><span class="n">explore</span><span class="p">(</span><span class="n">find</span><span class="o">=</span><span class="mh">0x401a5a</span><span class="p">,</span> <span class="n">avoid</span><span class="o">=</span><span class="mh">0x401a73</span><span class="p">)</span>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">sm</span><span class="p">.</span><span class="n">explore</span><span class="p">(</span><span class="n">find</span><span class="o">=</span><span class="mh">0x401a5a</span><span class="p">,</span> <span class="n">avoid</span><span class="o">=</span><span class="mh">0x401a73</span><span class="p">)</span>
 </code></pre></div></div>
 
 <p>Let’s look at the binary:
@@ -144,8 +144,8 @@ When it is finished with these it will jump to the entry point.</li>
 
 <p>I wrote the last two lines to grab the first value from the <code class="language-plaintext highlighter-rouge">found</code> stash and cast that value to byte and print the final result.</p>
 
-<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">result</span> <span class="o">=</span> <span class="n">sm</span><span class="o">.</span><span class="n">found</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-<span class="k">print</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">solver</span><span class="o">.</span><span class="nb">eval</span><span class="p">(</span><span class="n">argv1</span><span class="p">,</span> <span class="n">cast_to</span><span class="o">=</span><span class="nb">bytes</span><span class="p">))</span>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">result</span> <span class="o">=</span> <span class="n">sm</span><span class="p">.</span><span class="n">found</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="k">print</span><span class="p">(</span><span class="n">result</span><span class="p">.</span><span class="n">solver</span><span class="p">.</span><span class="nb">eval</span><span class="p">(</span><span class="n">argv1</span><span class="p">,</span> <span class="n">cast_to</span><span class="o">=</span><span class="nb">bytes</span><span class="p">))</span>
 </code></pre></div></div>
 
 <p>Let’s run our program to see the result:
@@ -178,9 +178,11 @@ When it is finished with these it will jump to the entry point.</li>
     
     
     
-    <a href="mailto:morpix@protonmail.com">Email</a>
+    <a href="mailto:morpix@pm.me">Email</a>
     
     <a href="https://github.com/lopqto">GitHub</a>
+    
+    <a href="https://twitter.com/lopqto">Twitter</a>
     
   </p>
 </div>
@@ -212,7 +214,7 @@ When it is finished with these it will jump to the entry point.</li>
 
     <footer class="footer">
 <div class="wrapper">
-&copy; 2020 Hamidreza Babaee
+&copy; 2021 Hamidreza Babaee
 </div>
 </footer>
 
