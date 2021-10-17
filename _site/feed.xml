@@ -6,9 +6,325 @@
 </description>
     <link>https://lopqto.me/</link>
     <atom:link href="https://lopqto.me/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Sun, 26 Sep 2021 02:22:06 +0330</pubDate>
-    <lastBuildDate>Sun, 26 Sep 2021 02:22:06 +0330</lastBuildDate>
+    <pubDate>Sun, 17 Oct 2021 11:22:24 +0330</pubDate>
+    <lastBuildDate>Sun, 17 Oct 2021 11:22:24 +0330</lastBuildDate>
     <generator>Jekyll v3.9.0</generator>
+    
+      <item>
+        <title>Building highly interactive honeypots: CVE-2021-41773 case study</title>
+        <description>&lt;p&gt;Every day, as we drink our coffee in the office, new vulnerabilities pop out, some of which are highly critical and need quick reactions. Exploiting some of these vulnerabilities is a cinch, like the one found in Apache HTTPD “&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CVE-2021-41773&lt;/code&gt;”, which is why they attract many attackers. In such situations, a precise solution is required to get information around the attack as quickly as possible. The gathered information can be used for different goals, for example, to assist security engineers in knowing the attack patterns to defend themselves against it, or maybe for security researchers to gather intel and knowledge as much as possible; therefore, they can share it publicly. One of those solutions is a &lt;strong&gt;honeypot&lt;/strong&gt;. Essentially, a honeypot acts as a decoy-based intrusion detection system to help us detect attacks and their patterns, and defend ourselves against them. This post (or maybe a series of posts) will discuss how to build a highly interactive honeypot for a vulnerability immediately and analyze the generated logs after successful or unsuccessful attacks.&lt;/p&gt;
+
+&lt;h3 id=&quot;the-approach&quot;&gt;The approach&lt;/h3&gt;
+
+&lt;p&gt;While numerous honeypot applications are available for free (like &lt;a href=&quot;https://github.com/DinoTools/dionaea&quot;&gt; dionaea
+&lt;/a&gt; and &lt;a href=&quot;https://github.com/cowrie/cowrie&quot;&gt;cowire&lt;/a&gt;), these programs attempt to emulate a service and present the attacker with a fake service. Honeypots of this type are effective against autonomic attacks, but they fail to detect manual attacks or attacks with more than one stage. In addition, there are several techniques an attacker can use to uncover a honeypot.&lt;/p&gt;
+
+&lt;p&gt;The aforementioned approach has some shortcomings such as limited emulation on specific services and challenging customization. About customization, researchers find it a time-consuming task where in some specific scenarios, they cannot get the advantage of customizatoin. Moreover, it is good to point out that there is no honeypot for dozens of services.&lt;/p&gt;
+
+&lt;p&gt;To overcome these hardships, rather than trying to emulate every possible aspect of the faked system, we can grant access to a real system as it is easy, so the attacker has no way of knowing whether they are logged on to a honeypot or not. Securing a real system is not easy; however, it can be done using virtualization or containerization.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/img/building-highly-interactive-honeypots1.jpg&quot; alt=&quot;Approach diagram&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;The honeypot is a vulnerable &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Docker&lt;/code&gt; container affected by the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CVE-2021-41773&lt;/code&gt;. Instances of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Filebeat&lt;/code&gt; and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Auditbeat&lt;/code&gt; will collect the logs, and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Elasticsearch&lt;/code&gt; will colorate them for us. Finally, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Kibana&lt;/code&gt; can provide a visualized dashboard.&lt;/p&gt;
+
+&lt;h3 id=&quot;vuleranble-container&quot;&gt;Vuleranble container&lt;/h3&gt;
+
+&lt;p&gt;A path traversal vulnerability and exploit just dropped in the wild for a specific version of Apache (Apache/2.4.49). This vulnerability allows an unauthenticated attacker to execute a path traversal attack (and now shown RCE if MOD_CGI is enabled) to read files outside the virtual directory path bounds. .&lt;/p&gt;
+
+&lt;p&gt;To build a vulnerable container for these types of vulnerabilities, we need the source code of that specific vulnerable version. Luckily, there is a mirror of Apache HTTPD at &lt;a href=&quot;https://github.com/apache/httpd/releases&quot;&gt;here!&lt;/a&gt;. After downloading the source code, we compile the vulnerable version and build a docker image we can deploy quickly.&lt;/p&gt;
+
+&lt;p&gt;The assumption is you know how to install and use Docker; if you’re not familiar, please take a look at &lt;a href=&quot;https://docs.docker.com/engine/install/&quot;&gt;This Article!&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;Let’s take a look at the content of the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Dockerfile&lt;/code&gt;:&lt;/p&gt;
+
+&lt;div class=&quot;language-Dockerfile highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;FROM&lt;/span&gt;&lt;span class=&quot;s&quot;&gt; ubuntu:20.04&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;MAINTAINER&lt;/span&gt;&lt;span class=&quot;s&quot;&gt; lopqto &amp;lt;morpix@protonmail.com&amp;gt;&lt;/span&gt;
+
+&lt;span class=&quot;c&quot;&gt;# Install the required packages&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;RUN &lt;/span&gt;apt-get update  &lt;span class=&quot;o&quot;&gt;&amp;amp;&amp;amp;&lt;/span&gt; apt-get &lt;span class=&quot;nb&quot;&gt;install&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-y&lt;/span&gt; &lt;span class=&quot;se&quot;&gt;\
+&lt;/span&gt;    build-essential zlibc libapr1-dev &lt;span class=&quot;se&quot;&gt;\
+&lt;/span&gt;    libaprutil1-dev libpcre3-dev zlib1g zlib1g-dev wget &lt;span class=&quot;se&quot;&gt;\
+&lt;/span&gt;    subversion python3 autoconf libtool-bin
+
+&lt;span class=&quot;k&quot;&gt;WORKDIR&lt;/span&gt;&lt;span class=&quot;s&quot;&gt; /honeypot&lt;/span&gt;
+
+&lt;span class=&quot;c&quot;&gt;# Download the vulnerable version&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;RUN &lt;/span&gt;wget https://github.com/apache/httpd/archive/refs/tags/2.4.49.tar.gz &lt;span class=&quot;se&quot;&gt;\
+&lt;/span&gt;    &lt;span class=&quot;o&quot;&gt;&amp;amp;&amp;amp;&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;tar&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-xvf&lt;/span&gt; 2.4.49.tar.gz
+
+&lt;span class=&quot;k&quot;&gt;WORKDIR&lt;/span&gt;&lt;span class=&quot;s&quot;&gt; /honeypot/httpd-2.4.49/&lt;/span&gt;
+
+&lt;span class=&quot;c&quot;&gt;# Compile the vulenrable version&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;RUN &lt;/span&gt;svn co http://svn.apache.org/repos/asf/apr/apr/trunk srclib/apr &lt;span class=&quot;se&quot;&gt;\
+&lt;/span&gt;    &lt;span class=&quot;o&quot;&gt;&amp;amp;&amp;amp;&lt;/span&gt; ./buildconf &lt;span class=&quot;se&quot;&gt;\
+&lt;/span&gt;    &lt;span class=&quot;o&quot;&gt;&amp;amp;&amp;amp;&lt;/span&gt; ./configure &lt;span class=&quot;nt&quot;&gt;--prefix&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;/usr/local/apache2 &lt;span class=&quot;se&quot;&gt;\
+&lt;/span&gt;    &lt;span class=&quot;nt&quot;&gt;--enable-mods-shared&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;all &lt;span class=&quot;nt&quot;&gt;--enable-deflate&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;--enable-proxy&lt;/span&gt; &lt;span class=&quot;se&quot;&gt;\
+&lt;/span&gt;    &lt;span class=&quot;nt&quot;&gt;--enable-proxy-balancer&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;--enable-proxy-http&lt;/span&gt; &lt;span class=&quot;se&quot;&gt;\
+&lt;/span&gt;    &lt;span class=&quot;o&quot;&gt;&amp;amp;&amp;amp;&lt;/span&gt; make &lt;span class=&quot;o&quot;&gt;&amp;amp;&amp;amp;&lt;/span&gt; make &lt;span class=&quot;nb&quot;&gt;install&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;RUN &lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;mkdir&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-p&lt;/span&gt; /var/www/html &lt;span class=&quot;o&quot;&gt;&amp;amp;&amp;amp;&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;mkdir&lt;/span&gt; /var/log/apache2/
+
+&lt;span class=&quot;c&quot;&gt;# Update the required permissions for www-data&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;RUN &lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;chown&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-hR&lt;/span&gt; www-data:www-data /var/www/html &lt;span class=&quot;se&quot;&gt;\
+&lt;/span&gt;    &lt;span class=&quot;o&quot;&gt;&amp;amp;&amp;amp;&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;chown&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-hR&lt;/span&gt; www-data:www-data /var/log/apache2/ &lt;span class=&quot;se&quot;&gt;\
+&lt;/span&gt;    &lt;span class=&quot;o&quot;&gt;&amp;amp;&amp;amp;&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;chown&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-hR&lt;/span&gt; www-data:www-data /usr/local/apache2/logs/
+
+&lt;span class=&quot;k&quot;&gt;USER&lt;/span&gt;&lt;span class=&quot;s&quot;&gt; www-data&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;WORKDIR&lt;/span&gt;&lt;span class=&quot;s&quot;&gt; /var/www/html&lt;/span&gt;
+
+&lt;span class=&quot;c&quot;&gt;# Run apache in foreground mode&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;ENTRYPOINT&lt;/span&gt;&lt;span class=&quot;s&quot;&gt; [&quot;/usr/local/apache2/bin/apachectl&quot;, &quot;-D&quot;, &quot;FOREGROUND&quot;]&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;To build the vulnerable image:&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;docker build &lt;span class=&quot;nb&quot;&gt;.&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-t&lt;/span&gt; honeypot:latest
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h3 id=&quot;test-the-vulnerable-container&quot;&gt;Test the vulnerable container&lt;/h3&gt;
+
+&lt;p&gt;The vulnerability requires specific permissions to be configured. Grab the default &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;httpd.conf&lt;/code&gt; file and append these lines end of it:&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&amp;lt;VirtualHost *:8080&amp;gt;
+	DocumentRoot /var/www/html
+
+	ErrorLog /var/log/apache2/error.log
+	CustomLog /var/log/apache2/access.log combined
+
+	&amp;lt;Directory /&amp;gt;
+		Require all granted
+	&amp;lt;/Directory&amp;gt;
+&amp;lt;/VirtualHost&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Then try to run the vulnerable container with the new config file:&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;docker run &lt;span class=&quot;nt&quot;&gt;-p&lt;/span&gt; 80:8080 &lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;
+    &lt;span class=&quot;nt&quot;&gt;-v&lt;/span&gt; &lt;span class=&quot;si&quot;&gt;$(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;pwd&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;)&lt;/span&gt;/httpd.conf:/usr/local/apache2/conf/httpd.conf &lt;span class=&quot;se&quot;&gt;\&lt;/span&gt;
+    apache:latest
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Test the vulnerability by running:&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;curl http://localhost/cgi-bin/.%2e/.%2e/.%2e/.%2e/bin/sh -d 'echo;whoami'
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;You should see &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;www-data&lt;/code&gt; in output.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/img/building-highly-interactive-honeypots2.png&quot; alt=&quot;PoC the vulnerability&quot; /&gt;&lt;/p&gt;
+
+&lt;h3 id=&quot;logging&quot;&gt;Logging&lt;/h3&gt;
+
+&lt;p&gt;The &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Elasticsearch&lt;/code&gt; ELK stack (Elasticsearch, Logstash, and Kibana) is an ideal solution for search and analytics platforms on honeypot logs.&lt;/p&gt;
+
+&lt;p&gt;There are various how-to’s describing how to get ELK running (see &lt;a href=&quot;https://github.com/deviantony/docker-elk&quot;&gt;here&lt;/a&gt; and &lt;a href=&quot;https://www.elastic.co/guide/en/elasticsearch/reference/current/docker.html&quot;&gt;here&lt;/a&gt; for example), so I assume you already have a working ELK system.&lt;/p&gt;
+
+&lt;h3 id=&quot;http-requests-logs&quot;&gt;HTTP requests logs&lt;/h3&gt;
+
+&lt;p&gt;A logger with these advantages is needed:&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;No need to modify the container’s configuration&lt;/li&gt;
+  &lt;li&gt;Prevent attackers from disabling the logger within the container&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;By default, Apache stores the access logs inside &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;/var/log/apache2/access.log&lt;/code&gt; and error logs inside &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;/var/log/apache2/error.log&lt;/code&gt;. We need to export these logs from the container and store them inside an &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ElasticSearch&lt;/code&gt; instance. To do this, we will use &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Filebeat&lt;/code&gt;:&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;Filebeat is a lightweight shipper for forwarding and centralizing log data. Installed as an agent on your servers, Filebeat monitors the log files or locations that you specify, collects log events, and forwards them either to Elasticsearch or Logstash for indexing.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;The main configuration file will look like this:&lt;/p&gt;
+
+&lt;div class=&quot;language-yml highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;s&quot;&gt;filebeat.config&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+  &lt;span class=&quot;na&quot;&gt;modules&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;path&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;${path.config}/modules.d/*.yml&lt;/span&gt;
+    &lt;span class=&quot;s&quot;&gt;reload.enabled&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;no&quot;&gt;false&lt;/span&gt;
+
+&lt;span class=&quot;s&quot;&gt;output.elasticsearch&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+  &lt;span class=&quot;na&quot;&gt;hosts&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;pi&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;${ELASTICSEARCH_HOST}:9200&quot;&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;]&lt;/span&gt;
+  &lt;span class=&quot;na&quot;&gt;username&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;${ELASTICSEARCH_USERNAME}&lt;/span&gt;
+  &lt;span class=&quot;na&quot;&gt;password&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;${ELASTICSEARCH_PASSWORD}&lt;/span&gt;
+
+&lt;span class=&quot;s&quot;&gt;setup.dashboards&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+  &lt;span class=&quot;na&quot;&gt;enabled&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;no&quot;&gt;true&lt;/span&gt;
+
+&lt;span class=&quot;s&quot;&gt;setup.kibana&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+  &lt;span class=&quot;na&quot;&gt;host&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;${KIBANA_HOST}:5601&quot;&lt;/span&gt;
+  &lt;span class=&quot;na&quot;&gt;username&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;${ELASTICSEARCH_USERNAME}&lt;/span&gt;
+  &lt;span class=&quot;na&quot;&gt;password&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;${ELASTICSEARCH_PASSWORD}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;And for the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;apache.yml&lt;/code&gt; we have:&lt;/p&gt;
+
+&lt;div class=&quot;language-yml highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;pi&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;module&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;apache&lt;/span&gt;
+  &lt;span class=&quot;na&quot;&gt;access&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;enabled&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;no&quot;&gt;true&lt;/span&gt;
+    &lt;span class=&quot;s&quot;&gt;var.paths&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;pi&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;/log/access.log&quot;&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;]&lt;/span&gt;
+  &lt;span class=&quot;na&quot;&gt;error&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;enabled&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;no&quot;&gt;true&lt;/span&gt;
+    &lt;span class=&quot;s&quot;&gt;var.paths&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;pi&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;/log/error.log&quot;&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;]&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Another option for this problem is to configure the containers to forward their Syslog data to the host, but this can be disabled if the attacker has root access, so it is not ideal.&lt;/p&gt;
+
+&lt;h3 id=&quot;executaion-logs&quot;&gt;Executaion logs&lt;/h3&gt;
+
+&lt;p&gt;Docker runs on the same kernel as the host machine, so we can use kernel-level logging to see what is happening inside the container. An off-the-shelf solution is to use a Linux audit system and configure it to log &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;execve&lt;/code&gt; and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;execveat&lt;/code&gt; system calls.&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;The Linux Audit system provides a way to track security-relevant information on your system. Based on pre-configured rules, Audit generates log entries to record as much information about the events that are happening on your system as possible.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;The sad news is Linux audit system does not support kernel namespaces, so logs cannot be filtered for specific containers and the host machine. To make things easier, we defined a custom user inside the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Dockerfile&lt;/code&gt; named &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;www-data&lt;/code&gt; to filter out the related logs by this user.&lt;/p&gt;
+
+&lt;div class=&quot;language-Dockerfile highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;USER&lt;/span&gt;&lt;span class=&quot;s&quot;&gt; www-data&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;To log the execution actions, we will use &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Auditbeat&lt;/code&gt;:&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;Auditbeat is a lightweight shipper that you can install on your servers to audit the activities of users and processes on your systems. For example, you can use Auditbeat to collect and centralize audit events from the Linux Audit Framework. You can also use Auditbeat to detect changes to critical files, like binaries and configuration files, and identify potential security policy violations.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;The &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Auditbeat&lt;/code&gt; configuration file will look like this:&lt;/p&gt;
+
+&lt;div class=&quot;language-yml highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;s&quot;&gt;auditbeat.modules&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+
+&lt;span class=&quot;pi&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;module&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;auditd&lt;/span&gt;
+  &lt;span class=&quot;na&quot;&gt;audit_rules&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;pi&quot;&gt;|&lt;/span&gt;
+    &lt;span class=&quot;s&quot;&gt;-a always,exit -F arch=b64 -S execve,execveat -k exec&lt;/span&gt;
+
+&lt;span class=&quot;s&quot;&gt;output.elasticsearch&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+  &lt;span class=&quot;na&quot;&gt;hosts&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;pi&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;${ELASTICSEARCH_HOST}:9200&quot;&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;]&lt;/span&gt;
+  &lt;span class=&quot;na&quot;&gt;username&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;${ELASTICSEARCH_USERNAME}&lt;/span&gt;
+  &lt;span class=&quot;na&quot;&gt;password&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;${ELASTICSEARCH_PASSWORD}&lt;/span&gt;
+
+&lt;span class=&quot;s&quot;&gt;setup.dashboards&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+  &lt;span class=&quot;na&quot;&gt;enabled&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;no&quot;&gt;true&lt;/span&gt;
+
+&lt;span class=&quot;s&quot;&gt;setup.kibana&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+  &lt;span class=&quot;na&quot;&gt;host&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;${KIBANA_HOST}:5601&quot;&lt;/span&gt;
+  &lt;span class=&quot;na&quot;&gt;username&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;${ELASTICSEARCH_USERNAME}&lt;/span&gt;
+  &lt;span class=&quot;na&quot;&gt;password&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;${ELASTICSEARCH_PASSWORD}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h3 id=&quot;putting-it-all-together&quot;&gt;Putting it all together&lt;/h3&gt;
+
+&lt;p&gt;At this point, we have an ELK stack set up and running, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Kibana&lt;/code&gt; dashboards ready to visualize the logs, a vulnerable container prepared to be exposed on the internet, a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Filebeat&lt;/code&gt; instance ready to capture HTTP logs, and an &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Auditbeat&lt;/code&gt; instance to capture executed commands.&lt;/p&gt;
+
+&lt;p&gt;We can create a simple &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;docker-compose.yml&lt;/code&gt; file to deploy the honeypot as fast as possible and make things much more manageable. To install the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;docker-compose&lt;/code&gt;, take a look at &lt;a href=&quot;https://docs.docker.com/compose/install/&quot;&gt;here!&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;Content of the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;docker-compose.yml&lt;/code&gt; will be something like this:&lt;/p&gt;
+
+&lt;div class=&quot;language-yml highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;na&quot;&gt;version&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;3.8&quot;&lt;/span&gt;
+&lt;span class=&quot;na&quot;&gt;services&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+  &lt;span class=&quot;na&quot;&gt;honeypot&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;build&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;./&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;hostname&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;honeypot&quot;&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;networks&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+      &lt;span class=&quot;pi&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;honeypot&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;ports&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+      &lt;span class=&quot;pi&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;80:8080&quot;&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;volumes&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+      &lt;span class=&quot;pi&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;logs:/var/log/apache2/&lt;/span&gt;
+      &lt;span class=&quot;pi&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;$PWD/httpd.conf:/usr/local/apache2/conf/httpd.conf&lt;/span&gt;
+
+  &lt;span class=&quot;na&quot;&gt;auditbeat&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;image&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;docker.elastic.co/beats/auditbeat:7.15.0&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;hostname&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;auditbeat&quot;&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;user&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;root&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;pid&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;host&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;cap_add&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+      &lt;span class=&quot;pi&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;AUDIT_CONTROL&lt;/span&gt;
+      &lt;span class=&quot;pi&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;AUDIT_READ&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;networks&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+      &lt;span class=&quot;pi&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;honeypot&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;volumes&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+      &lt;span class=&quot;pi&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;auditbeat:/usr/share/auditbeat/data&lt;/span&gt;
+      &lt;span class=&quot;pi&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;$PWD/auditbeat.yml:/usr/share/auditbeat/auditbeat.yml:ro&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;environment&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+      &lt;span class=&quot;pi&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;ELASTICSEARCH_HOST=elk.host&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;# Change&lt;/span&gt;
+      &lt;span class=&quot;pi&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;KIBANA_HOST=kibana.host&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;# Change&lt;/span&gt;
+      &lt;span class=&quot;pi&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;ELASTICSEARCH_USERNAME=elastic&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;# Change&lt;/span&gt;
+      &lt;span class=&quot;pi&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;ELASTICSEARCH_PASSWORD=changeme&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;# Change&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;command&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;pi&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;--strict.perms=false&quot;&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;]&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;depends_on&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+      &lt;span class=&quot;pi&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;honeypot&lt;/span&gt;
+
+  &lt;span class=&quot;na&quot;&gt;filebeat&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;image&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;docker.elastic.co/beats/filebeat:7.15.0&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;hostname&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;filebeat&quot;&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;user&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;root&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;networks&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+      &lt;span class=&quot;pi&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;honeypot&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;volumes&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+      &lt;span class=&quot;pi&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;filebeat:/usr/share/filebeat/data&lt;/span&gt;
+      &lt;span class=&quot;pi&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;$PWD/filebeat.yml:/usr/share/filebeat/filebeat.yml&lt;/span&gt;
+      &lt;span class=&quot;pi&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;$PWD/apache.yml:/usr/share/filebeat/modules.d/apache.yml&lt;/span&gt;
+      &lt;span class=&quot;pi&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;logs:/log/:ro&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;environment&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+      &lt;span class=&quot;pi&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;ELASTICSEARCH_HOST=elk.host&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;# Change&lt;/span&gt;
+      &lt;span class=&quot;pi&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;KIBANA_HOST=kibana.host&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;# Change&lt;/span&gt;
+      &lt;span class=&quot;pi&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;ELASTICSEARCH_USERNAME=elastic&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;# Change&lt;/span&gt;
+      &lt;span class=&quot;pi&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;ELASTICSEARCH_PASSWORD=changeme&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;# Change&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;command&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;pi&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;--strict.perms=false&quot;&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;]&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;depends_on&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+      &lt;span class=&quot;pi&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;honeypot&lt;/span&gt;
+
+&lt;span class=&quot;na&quot;&gt;networks&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+  &lt;span class=&quot;na&quot;&gt;honeypot&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+
+&lt;span class=&quot;na&quot;&gt;volumes&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+  &lt;span class=&quot;na&quot;&gt;auditbeat&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+  &lt;span class=&quot;na&quot;&gt;filebeat&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+  &lt;span class=&quot;na&quot;&gt;logs&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;To bring up the honeypot stack, run the following command:&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;docker-compose up -d
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;That’s it :). Now, we can trace the logs with the help of Kibana and some beautiful dashboards.&lt;/p&gt;
+
+&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Auditbeat&lt;/code&gt; executions Dashboard:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/img/building-highly-interactive-honeypots3.png&quot; alt=&quot;executions Dashboard&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Filebeat&lt;/code&gt; Apache access and error logs dashboard:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/img/building-highly-interactive-honeypots4.png&quot; alt=&quot;Apache access and error logs dashboard&quot; /&gt;&lt;/p&gt;
+
+&lt;h3 id=&quot;conclusion&quot;&gt;Conclusion&lt;/h3&gt;
+
+&lt;p&gt;We can build interactive honeypots for a variety of vulnerabilities in such a short period of time using containers. The ELK stack additionally provides us with some tools to gather valuable logs, manage records easier, and visualize them for better understanding. Spending time and effort, researchers can build honeypots to trace active threats and threat actors, such as miners, and share attack knowledge with other researchers. The information can be used to create threat feeds with a low likelihood of false positives. Additionally, engineers can use honeypots as a decoy system inside of an organization.&lt;/p&gt;
+
+&lt;p&gt;The project has been shared on &lt;a href=&quot;https://github.com/lopqto/CVE-2021-41773_Honeypot&quot;&gt;Github&lt;/a&gt;. You can use it as a starting point. I hope you find it useful.&lt;/p&gt;
+
+&lt;p&gt;You’re more than welcome to share your thoughts and ideas. Feel free to ping me if you have questions about this topic.&lt;/p&gt;
+
+&lt;p&gt;Enjoy!&lt;/p&gt;
+
+&lt;h3 id=&quot;read-more&quot;&gt;Read more&lt;/h3&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;a href=&quot;https://github.com/lopqto/CVE-2021-41773_Honeypot&quot;&gt;CVE-2021-41773_Honeypot&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://github.com/blasty/CVE-2021-41773&quot;&gt;CVE-2021-41773 Playground by blasty&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://github.com/mrhavens/DockerTrap&quot;&gt;DockerTrap by Mark Havens&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+</description>
+        <pubDate>Sun, 17 Oct 2021 03:30:00 +0330</pubDate>
+        <link>https://lopqto.me/posts/building-highly-interactive-honeypots</link>
+        <guid isPermaLink="true">https://lopqto.me/posts/building-highly-interactive-honeypots</guid>
+        
+        
+        <category>security-engineering</category>
+        
+        <category>threat-analysis</category>
+        
+      </item>
     
       <item>
         <title>Automated dynamic import resolving using binary emulation</title>
