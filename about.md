@@ -6,4 +6,4 @@ permalink: /about/
 
 ### Who i am ? 
 
-DevSecOps engineer with lots of interest in cloud security. In Love with malware analysis and hardware tinkering. Currently, working at [InfiLock](https://infilock.io).
+IIoT security engineer with lots of interest in hardware tinkering. In Love with malware analysis and reverse engineering. Currently, working at [Edgecom Energy](https://www.edgecomenergy.ca/).
