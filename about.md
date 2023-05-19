@@ -4,6 +4,6 @@ title: About
 permalink: /about/
 ---
 
-### Who i am ? 
+### Who am I? 
 
-IIoT security engineer with lots of interest in hardware tinkering. In Love with malware analysis and reverse engineering. Currently, working at [Edgecom Energy](https://www.edgecomenergy.ca/).
+I am an IIoT security engineer with a passion for hardware tinkering, specializing in the realm of malware analysis and reverse engineering. Currently employed at [Edgecom Energy](https://www.edgecomenergy.ca/), I diligently work to ensure robust security measures and protect critical infrastructure.
