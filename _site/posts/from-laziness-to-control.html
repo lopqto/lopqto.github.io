@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>From Laziness to Control: Reversing an IoT device using Frida « lopqto's adventures</title>
+  <meta name="description" content="Have you ever had that irresistible urge to take apart a cheap IoT device you bought from a random store? You know, that feeling that says, “Let’s dive into ...">
+
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="canonical" href="https://lopqto.me/posts/from-laziness-to-control">
+  <link rel="shortcut icon" type="image/png" href="/favicon.png">
+  <link rel="alternate" type="application/rss+xml" title="lopqto's adventures" href="https://lopqto.me/feed.xml" />
+</head>
+
+
+  <body>
+
+    <div class="header-placeholder"></div>
+<header class="header">
+  <div class="wrapper">
+    <div id="sidebar-toggle">TOC</div>
+    <a class="site-title" href="/">lopqto's adventures</a>
+    <nav class="site-nav">
+      
+        
+        <a class="page-link" href="/about/">About</a>
+      
+        
+        <a class="page-link" href="/category/">Category</a>
+      
+    </nav>
+  </div>
+</header>
+
+
+    <div class="page-content">
+      <div class="wrapper">
+        <div class="col-main">
+          <div class="post">
+
+  <header class="post-header">
+    <h1 class="post-title">From Laziness to Control: Reversing an IoT device using Frida</h1>
+    <p class="post-meta">Jun 13, 2023</p>
+  </header>
+
+  <article class="post-content">
+    <p>Have you ever had that irresistible urge to take apart a cheap IoT device you bought from a random store? You know, that feeling that says, “Let’s dive into the mystery and figure out how this thing actually works!” But then you stop and ask yourself, “Why am I even doing this?” and struggle to come up with a good reason. Well, let me tell you, if there was a Ph.D. for taking apart useless things, I’d probably have earned it!</p>
+
+<p>Today, we’re going to explore the exciting world of reverse engineering, with a focus on understanding the device’s communication protocol. And here’s my little secret: this is my go-to trick when I’m feeling a bit lazy. Get ready for some tech magic, my friends!</p>
+
+<h3 id="exploring-the-target-device">Exploring the Target Device</h3>
+
+<p>Alright, let’s kick off our journey by addressing the question: What are we going to reverse engineer? Last week, I purchased an LED strip stand (as shown in the image), which came with a controller and a questionable phone app. From my experience, these types of apps usually communicate through Bluetooth. However, I’m not entirely certain about the controller itself. It could be using infrared, Bluetooth, or maybe even something entirely different (but probably not)?</p>
+
+<p><img src="/img/from-laziness-to-control1.jpg" alt="LED strip stand" /></p>
+
+<p><img src="/img/from-laziness-to-control2.jpg" alt="Mobile app" /></p>
+
+<p>Now, here’s the deal: I want to ditch the app because it’s been tickeling me crazy. To achieve this, I need to uncover the commands that are being sent from the app to the LED strip. Once I have a clear understanding of these commands, I can rewrite them in a programming language that I’m comfortable with. So, our goal is set: let’s crack the code.</p>
+
+<h3 id="choosing-the-right-approach">Choosing the Right Approach</h3>
+
+<p>In order to achieve our goal of taking down the app and gaining control over our LED strip, we have several options available. Let’s explore each one:</p>
+
+<ul>
+  <li>
+    <p>Dump the LED strip’s firmware and reverse it: This approach involves extracting and analyzing the firmware of the LED strip itself. However, it requires extensive knowledge of hardware and may consume a significant amount of time and effort. Considering the complexity and potential challenges, this approach may not be the most convenient choice for a simple strip light.</p>
+  </li>
+  <li>
+    <p>Dump the controller’s firmware: This method involves extracting and examining the firmware of the controller. Similar to the previous approach, it requires hardware knowledge and can be time-consuming. While it provides valuable insights, it may not be the most suitable option for our scenario.</p>
+  </li>
+  <li>
+    <p>Use a magical device to sniff Bluetooth communication: This option involves employing a specialized device to intercept and analyze the Bluetooth communication between the app and the LED strip. Unfortunately, obtaining such a device might be difficult or costly, making it less reliable for our purposes.</p>
+  </li>
+  <li>
+    <p>Dissect the mobile app and reverse engineer it: This is the approach I have chosen, and let me tell you why. Tackling the mobile app allows us to dive into its inner workings, understand the commands it sends to the LED strip, and ultimately rewrite those commands according to our preferences. It’s a more accessible option, requiring reverse engineering skills but without the hardware-intensive aspects of the other methods.</p>
+  </li>
+</ul>
+
+<p>Considering my inclination toward efficiency and laziness, focusing on dissecting and reverse engineering the mobile app appears to be the most favorable path forward. Let’s dive into the app’s code and unveil its secrets!</p>
+
+<p><img src="/img/from-laziness-to-control3.png" alt="Byte code viewer's output" /></p>
+
+<p>When we’re faced with a big challenge like reading lots of messy code written in Java or Kotlin, it can be really tiring to go through it all by hand. But don’t worry, I’ve got a solution that’s both efficient and effective. Our main goal is still clear: we want to figure out how the app communicates and extract the important commands, without getting too caught up in the app’s inner workings.</p>
+
+<p>Here’s where dynamic analysis comes in. It’s a smart technique that lets us skip the hard work of reading all that code manually. Instead, we can focus on the most important parts. And to make things even easier, we’ll use Frida, a handy tool that can help us with our analysis.</p>
+
+<p>By using dynamic analysis and Frida, we’ll be able to work smarter, not harder (I made up this excuse to cover up my laziness :d ). We’ll be able to find the key details of the communication protocol without getting lost in all the other stuff. Get ready to see how this combination of analysis and Frida can make our job much simpler and more efficient.</p>
+
+<h3 id="environment-setup">Environment Setup</h3>
+
+<p>Let’s set up the environment for our project. Here are the steps:</p>
+
+<ol>
+  <li>
+    <p>Rooted Android device: We’ll need a real Android device that has been rooted for this project. Emulators won’t work because they don’t support the Bluetooth stack. Some emulators might have a simulated Bluetooth connection, but we need to connect to a real device. Also, install the <code class="language-plaintext highlighter-rouge">HappyLighting</code> app.</p>
+  </li>
+  <li>
+    <p>ADB (Android Debug Bridge): We’ll use ADB to communicate with the Android device. You can install ADB on Debian-based Linux distributions by running the following command:</p>
+  </li>
+</ol>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">sudo </span>apt <span class="nb">install </span>adb
+</code></pre></div></div>
+
+<p>Note: Make sure you have enabled <code class="language-plaintext highlighter-rouge">Developer Options</code> on your Android device.</p>
+
+<ol>
+  <li>Frida: We also need to install Frida (You need Python) on both the computer and the Android device.</li>
+</ol>
+
+<p>On your computer, run the following command to install the <code class="language-plaintext highlighter-rouge">frida-tools</code>:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>pip <span class="nb">install </span>frida-tools
+</code></pre></div></div>
+
+<p>On the Android device, first download the appropriate <code class="language-plaintext highlighter-rouge">frida-server</code> binary for your device’s CPU architecture from <a href="https://github.com/frida/frida/releases">here!</a>. Then, push the <code class="language-plaintext highlighter-rouge">frida-server</code> to the device by running these commands:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>adb push /path/to/frida-server /data/local/tmp/
+adb shell <span class="nb">chmod </span>755 /data/local/tmp/frida-server
+adb shell /data/local/tmp/frida-server &amp;
+</code></pre></div></div>
+
+<p>To verify that everything is working correctly and that you can communicate with the <code class="language-plaintext highlighter-rouge">frida-server</code>, run the following command on your computer:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>frida-ps <span class="nt">-U</span>
+</code></pre></div></div>
+
+<p>You should see a list of running processes on your Android device.</p>
+
+<p><img src="/img/from-laziness-to-control4.png" alt="frida-ps's output" /></p>
+
+<p>With these steps completed, we have our environment set up and ready to go.</p>
+
+<h3 id="reversing-the-communication-protocol">Reversing the Communication Protocol</h3>
+
+<p>Finally, we’ve reached the exciting part where we dive into reversing and getting our hands dirty. But before we begin, let’s discuss our approach. If you’re already familiar with Frida and how it works, great! If not, take a quick look <a href="https://learnfrida.info/">here!</a> to get acquainted.</p>
+
+<p>In simple terms, our goal is to find the specific function responsible for sending commands to the LED strip device, hook it using Frida, and log those commands. This way, we can reimplement a basic Bluetooth client and send the commands ourselves.</p>
+
+<p>Now, you might be wondering how we can achieve this without delving into the complexities of reversing the Android application. Well, let’s take a step back and think outside the box for a moment. Do we really need to locate specific functions? In fact, what is the “right” function we want to hook?</p>
+
+<p>To answer that, we need to consider a different perspective. We’re interested in the last function in the chain of the functions that handles and sends the commands to the device. Why the last one? Because we want to capture the raw payload being sent to the device, including any checksums, encodings, or padding applied. We need the raw payload as our starting point. We can capture that payload, send it to the device, and see if it works. If it does, great! If not, we can backtrack and analyze the chain further.</p>
+
+<p>So, what is this last function responsible for sending the Bluetooth payload? Well, you guessed it! It’s the Java Bluetooth function from the Android SDK. Ultimately, Java and the Android SDK are responsible for delivering the payload to Android’s Bluetooth stack. Therefore, we can conveniently ignore all the code and simply hook the Java Bluetooth function. That’s all there is to it. We can reverse the communication protocol without actually having to reverse the entire application (if we’re fortunate enough that capturing and emulating the raw payload works for us).</p>
+
+<p>With this approach, we’re ready to uncover the secrets of the communication protocol and create our own Bluetooth client. It’s time to embark on this reverse engineering journey and see where it takes us!</p>
+
+<p>To implement hooking with Frida, we need to find the Bluetooth function’s signature. After some searching, we come across the <code class="language-plaintext highlighter-rouge">android.bluetooth.BluetoothGattCharacteristic</code> class, which has a function called <code class="language-plaintext highlighter-rouge">setValue</code> responsible for sending payloads through Bluetooth. The function signature is as follows:</p>
+
+<div class="language-java highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kd">public</span> <span class="kt">boolean</span> <span class="nf">setValue</span> <span class="o">(</span><span class="nc">String</span> <span class="n">value</span><span class="o">)</span>
+</code></pre></div></div>
+
+<p>Take your time and look at the examples provided by Frida docs <a href="https://frida.re/docs/examples/android/">here!</a>. Now, let’s write a proper hook for the <code class="language-plaintext highlighter-rouge">setValue</code> function using Frida:</p>
+
+<div class="language-javascript highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nx">Java</span><span class="p">.</span><span class="nx">perform</span><span class="p">(</span><span class="kd">function</span> <span class="p">()</span> <span class="p">{</span>
+    
+    <span class="kd">var</span> <span class="nx">BluetoothGattCharacteristic</span> <span class="o">=</span> <span class="nx">Java</span><span class="p">.</span><span class="nx">use</span><span class="p">(</span><span class="dl">'</span><span class="s1">android.bluetooth.BluetoothGattCharacteristic</span><span class="dl">'</span><span class="p">);</span>
+  
+    <span class="c1">// setValue(String)</span>
+    <span class="nx">BluetoothGattCharacteristic</span><span class="p">.</span><span class="nx">setValue</span><span class="p">.</span><span class="nx">overload</span><span class="p">(</span><span class="dl">'</span><span class="s1">java.lang.String</span><span class="dl">'</span><span class="p">).</span><span class="nx">implementation</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">value</span><span class="p">)</span> <span class="p">{</span>
+      <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="dl">'</span><span class="s1">[BluetoothGattCharacteristic.setValue] Value (String): </span><span class="dl">'</span> <span class="o">+</span> <span class="nx">value</span><span class="p">);</span>
+  
+      <span class="c1">// Call the original method and return the result</span>
+      <span class="kd">var</span> <span class="nx">result</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">setValue</span><span class="p">(</span><span class="nx">value</span><span class="p">);</span>
+      <span class="k">return</span> <span class="nx">result</span><span class="p">;</span>
+    <span class="p">};</span>
+
+  <span class="p">});</span>
+</code></pre></div></div>
+
+<p>This code sets up a hook on the <code class="language-plaintext highlighter-rouge">android.bluetooth.BluetoothGattCharacteristic.setValue()</code> function. Whenever this function is called, it will log the inputs (hopefully the commands we’re looking for) to the console.</p>
+
+<p>However, we notice that there are three more <code class="language-plaintext highlighter-rouge">overloads</code> for this function, as mentioned in the Android Developer documentation <a href="https://developer.android.com/reference/android/bluetooth/BluetoothGattCharacteristic#setValue(java.lang.String)">here!</a>.</p>
+
+<blockquote>
+  <p>In Java, method overloading is the ability to define more than one method with the same name in a class. The compiler is able to distinguish between the methods because of their method signatures1. This means that multiple methods can have the same name as long as the number and/or type of parameters are different. Method overloading is mainly used to increase the readability of the program; to make it look better. For example, instead of defining two methods that should do the same thing, it is better to overload one.</p>
+</blockquote>
+
+<p>To ensure we don’t miss anything, let’s implement hooks for these overloads as well:</p>
+
+<div class="language-javascript highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nx">Java</span><span class="p">.</span><span class="nx">perform</span><span class="p">(</span><span class="kd">function</span> <span class="p">()</span> <span class="p">{</span>
+    <span class="kd">var</span> <span class="nx">BluetoothGattCharacteristic</span> <span class="o">=</span> <span class="nx">Java</span><span class="p">.</span><span class="nx">use</span><span class="p">(</span><span class="dl">'</span><span class="s1">android.bluetooth.BluetoothGattCharacteristic</span><span class="dl">'</span><span class="p">);</span>
+  
+    <span class="c1">// Overload 1: setValue(String)</span>
+    <span class="nx">BluetoothGattCharacteristic</span><span class="p">.</span><span class="nx">setValue</span><span class="p">.</span><span class="nx">overload</span><span class="p">(</span><span class="dl">'</span><span class="s1">java.lang.String</span><span class="dl">'</span><span class="p">).</span><span class="nx">implementation</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">value</span><span class="p">)</span> <span class="p">{</span>
+      <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="dl">'</span><span class="s1">[BluetoothGattCharacteristic.setValue] Value (String): </span><span class="dl">'</span> <span class="o">+</span> <span class="nx">value</span><span class="p">);</span>
+  
+      <span class="c1">// Call the original method and return the result</span>
+      <span class="kd">var</span> <span class="nx">result</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">setValue</span><span class="p">(</span><span class="nx">value</span><span class="p">);</span>
+      <span class="k">return</span> <span class="nx">result</span><span class="p">;</span>
+    <span class="p">};</span>
+  
+    <span class="c1">// Overload 2: setValue(byte[])</span>
+    <span class="nx">BluetoothGattCharacteristic</span><span class="p">.</span><span class="nx">setValue</span><span class="p">.</span><span class="nx">overload</span><span class="p">(</span><span class="dl">'</span><span class="s1">[B</span><span class="dl">'</span><span class="p">).</span><span class="nx">implementation</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">value</span><span class="p">)</span> <span class="p">{</span>
+      <span class="c1">// Convert byte array to hex string</span>
+      <span class="kd">var</span> <span class="nx">hexValue</span> <span class="o">=</span> <span class="nx">bytesToHex</span><span class="p">(</span><span class="nx">value</span><span class="p">);</span>
+  
+      <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="dl">'</span><span class="s1">[BluetoothGattCharacteristic.setValue] Value (byte[]): </span><span class="dl">'</span> <span class="o">+</span> <span class="nx">hexValue</span><span class="p">);</span>
+  
+      <span class="c1">// Call the original method and return the result</span>
+      <span class="kd">var</span> <span class="nx">result</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">setValue</span><span class="p">(</span><span class="nx">value</span><span class="p">);</span>
+      <span class="k">return</span> <span class="nx">result</span><span class="p">;</span>
+    <span class="p">};</span>
+  
+    <span class="c1">// Overload 3: setValue(int, int, int)</span>
+    <span class="nx">BluetoothGattCharacteristic</span><span class="p">.</span><span class="nx">setValue</span><span class="p">.</span><span class="nx">overload</span><span class="p">(</span><span class="dl">'</span><span class="s1">int</span><span class="dl">'</span><span class="p">,</span> <span class="dl">'</span><span class="s1">int</span><span class="dl">'</span><span class="p">,</span> <span class="dl">'</span><span class="s1">int</span><span class="dl">'</span><span class="p">).</span><span class="nx">implementation</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">value1</span><span class="p">,</span> <span class="nx">value2</span><span class="p">,</span> <span class="nx">value3</span><span class="p">)</span> <span class="p">{</span>
+      <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="dl">'</span><span class="s1">[BluetoothGattCharacteristic.setValue] Values (int, int, int): </span><span class="dl">'</span> <span class="o">+</span> <span class="nx">value1</span> <span class="o">+</span> <span class="dl">'</span><span class="s1">, </span><span class="dl">'</span> <span class="o">+</span> <span class="nx">value2</span> <span class="o">+</span> <span class="dl">'</span><span class="s1">, </span><span class="dl">'</span> <span class="o">+</span> <span class="nx">value3</span><span class="p">);</span>
+  
+      <span class="c1">// Call the original method and return the result</span>
+      <span class="kd">var</span> <span class="nx">result</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">setValue</span><span class="p">(</span><span class="nx">value1</span><span class="p">,</span> <span class="nx">value2</span><span class="p">,</span> <span class="nx">value3</span><span class="p">);</span>
+      <span class="k">return</span> <span class="nx">result</span><span class="p">;</span>
+    <span class="p">};</span>
+  
+    <span class="c1">// Overload 4: setValue(int, int, int, int)</span>
+    <span class="nx">BluetoothGattCharacteristic</span><span class="p">.</span><span class="nx">setValue</span><span class="p">.</span><span class="nx">overload</span><span class="p">(</span><span class="dl">'</span><span class="s1">int</span><span class="dl">'</span><span class="p">,</span> <span class="dl">'</span><span class="s1">int</span><span class="dl">'</span><span class="p">,</span> <span class="dl">'</span><span class="s1">int</span><span class="dl">'</span><span class="p">,</span> <span class="dl">'</span><span class="s1">int</span><span class="dl">'</span><span class="p">).</span><span class="nx">implementation</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">value1</span><span class="p">,</span> <span class="nx">value2</span><span class="p">,</span> <span class="nx">value3</span><span class="p">,</span> <span class="nx">value4</span><span class="p">)</span> <span class="p">{</span>
+      <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="dl">'</span><span class="s1">[BluetoothGattCharacteristic.setValue] Values (int, int, int, int): </span><span class="dl">'</span> <span class="o">+</span> <span class="nx">value1</span> <span class="o">+</span> <span class="dl">'</span><span class="s1">, </span><span class="dl">'</span> <span class="o">+</span> <span class="nx">value2</span> <span class="o">+</span> <span class="dl">'</span><span class="s1">, </span><span class="dl">'</span> <span class="o">+</span> <span class="nx">value3</span> <span class="o">+</span> <span class="dl">'</span><span class="s1">, </span><span class="dl">'</span> <span class="o">+</span> <span class="nx">value4</span><span class="p">);</span>
+  
+      <span class="c1">// Call the original method and return the result</span>
+      <span class="kd">var</span> <span class="nx">result</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">setValue</span><span class="p">(</span><span class="nx">value1</span><span class="p">,</span> <span class="nx">value2</span><span class="p">,</span> <span class="nx">value3</span><span class="p">,</span> <span class="nx">value4</span><span class="p">);</span>
+      <span class="k">return</span> <span class="nx">result</span><span class="p">;</span>
+    <span class="p">};</span>
+  
+    <span class="c1">// Helper function to convert a byte array to a hex string</span>
+    <span class="kd">function</span> <span class="nx">bytesToHex</span><span class="p">(</span><span class="nx">bytes</span><span class="p">)</span> <span class="p">{</span>
+      <span class="kd">var</span> <span class="nx">hexArray</span> <span class="o">=</span> <span class="p">[];</span>
+      <span class="k">for</span> <span class="p">(</span><span class="kd">var</span> <span class="nx">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="nx">i</span> <span class="o">&lt;</span> <span class="nx">bytes</span><span class="p">.</span><span class="nx">length</span><span class="p">;</span> <span class="o">++</span><span class="nx">i</span><span class="p">)</span> <span class="p">{</span>
+        <span class="kd">var</span> <span class="nx">byteString</span> <span class="o">=</span> <span class="p">(</span><span class="nx">bytes</span><span class="p">[</span><span class="nx">i</span><span class="p">]</span> <span class="o">&amp;</span> <span class="mh">0xff</span><span class="p">).</span><span class="nx">toString</span><span class="p">(</span><span class="mi">16</span><span class="p">);</span>
+        <span class="nx">hexArray</span><span class="p">.</span><span class="nx">push</span><span class="p">(</span><span class="nx">byteString</span><span class="p">.</span><span class="nx">length</span> <span class="o">===</span> <span class="mi">1</span> <span class="p">?</span> <span class="dl">'</span><span class="s1">0</span><span class="dl">'</span> <span class="o">+</span> <span class="nx">byteString</span> <span class="p">:</span> <span class="nx">byteString</span><span class="p">);</span>
+      <span class="p">}</span>
+      <span class="k">return</span> <span class="nx">hexArray</span><span class="p">.</span><span class="nx">join</span><span class="p">(</span><span class="dl">''</span><span class="p">);</span>
+    <span class="p">}</span>
+  <span class="p">});</span>
+</code></pre></div></div>
+
+<p>With this code, we have implemented hooks for all the overloads of the <code class="language-plaintext highlighter-rouge">setValue</code> function. Each hook will log the inputs to the console, allowing us to capture the commands we’re interested in. This way, we can move forward with analyzing and emulating the captured commands.</p>
+
+<p>To run Frida with the hooks and capture the output, execute the following command in the terminal:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>frida <span class="nt">-U</span> <span class="nt">-f</span> com.xiaoyu.hlight <span class="nt">-l</span> bt_hooks.js
+</code></pre></div></div>
+
+<p><code class="language-plaintext highlighter-rouge">bt_hooks.js</code> is the filename of the JavaScript code containing the hooks and <code class="language-plaintext highlighter-rouge">com.xiaoyu.hlight</code> is the package name of the <code class="language-plaintext highlighter-rouge">HappyLighting</code> app.</p>
+
+<p>Once the Frida script is running, you can test the functionality by turning the LED strip on and off using the app. The console output should display the captured commands.</p>
+
+<p><img src="/img/from-laziness-to-control5.png" alt="On &amp; Off console log" /></p>
+
+<p>In this case, we see that <code class="language-plaintext highlighter-rouge">cc2333</code> is the command for turning on the LED strip, while <code class="language-plaintext highlighter-rouge">cc2433</code> is the command for turning it off. The static parts <code class="language-plaintext highlighter-rouge">cc</code> and <code class="language-plaintext highlighter-rouge">33</code> indicate some command indicator, and we can assume that <code class="language-plaintext highlighter-rouge">23</code> is for turning on the LED strip and <code class="language-plaintext highlighter-rouge">24</code> is for turning it off.</p>
+
+<p>Hopefully, by sending these commands (<code class="language-plaintext highlighter-rouge">cc2333</code> to turn on and <code class="language-plaintext highlighter-rouge">cc2433</code> to turn off) to the LED strip ourselves, we can control its status accordingly.</p>
+
+<p>To further explore the functionality and reverse-engineer the commands, let’s change the LED strip’s mode through the application and observe the corresponding commands. By switching between the “Rainbow pulsating” and “Red pulsating” modes multiple times, we can capture the commands associated with each mode.</p>
+
+<p><img src="/img/from-laziness-to-control6.png" alt="Mode switch console log" /></p>
+
+<p>After analyzing the captured commands, we can observe that <code class="language-plaintext highlighter-rouge">bb260f44</code> corresponds to the “Rainbow pulsating” mode, while <code class="language-plaintext highlighter-rouge">bb250f44</code> corresponds to the “Red pulsating” mode. From our previous understanding of the command structure, we can deduce that the <code class="language-plaintext highlighter-rouge">bb</code> and <code class="language-plaintext highlighter-rouge">44</code> parts likely serve as command indicators.</p>
+
+<p>However, we notice another part in the commands: <code class="language-plaintext highlighter-rouge">0f</code>. By further experimentation, specifically by adjusting the speed of the effect, we can observe that the <code class="language-plaintext highlighter-rouge">0f</code> portion changes accordingly. For example, <code class="language-plaintext highlighter-rouge">01</code> represents the maximum speed, while <code class="language-plaintext highlighter-rouge">1f</code> corresponds to the minimum speed.</p>
+
+<p><img src="/img/from-laziness-to-control7.png" alt="Speed change console log" /></p>
+
+<p>Therefore, we can conclude that the <code class="language-plaintext highlighter-rouge">0f</code> portion of the command likely represents the speed parameter, with different values indicating various speed settings.</p>
+
+<p>I believe we can wrap things up at this point since I think I have successfully demonstrated the concept I had in mind. Now, let’s proceed to the next section where we will develop a straightforward client application to control the LED strip.</p>
+
+<h3 id="writing-a-custom-client">Writing a Custom Client</h3>
+
+<p>To write a simple client, I opted for <code class="language-plaintext highlighter-rouge">Python</code> as my preferred language since it’s the one I usually turn to when exploring new concepts. However, you are free to choose any programming language that you’re comfortable with.</p>
+
+<p>Here’s the code:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code>
+<span class="kn">import</span> <span class="nn">asyncio</span>
+<span class="kn">from</span> <span class="nn">bleak</span> <span class="kn">import</span> <span class="n">BleakClient</span>
+
+<span class="c1"># Bluetooth device information
+</span><span class="n">device_address</span> <span class="o">=</span> <span class="s">"92:3B:12:00:0D:B2"</span>  <span class="c1"># MAC address of the device
+</span><span class="n">characteristic_uuid</span> <span class="o">=</span> <span class="s">"0000ffd9-0000-1000-8000-00805f9b34fb"</span>  <span class="c1"># UUID of the characteristic
+</span>
+<span class="c1"># Payload in hex string format
+</span><span class="n">payload</span> <span class="o">=</span> <span class="nb">bytearray</span><span class="p">.</span><span class="n">fromhex</span><span class="p">(</span><span class="s">"cc2333"</span><span class="p">)</span>
+
+<span class="k">async</span> <span class="k">def</span> <span class="nf">write_payload</span><span class="p">():</span>
+    <span class="k">async</span> <span class="k">with</span> <span class="n">BleakClient</span><span class="p">(</span><span class="n">device_address</span><span class="p">)</span> <span class="k">as</span> <span class="n">client</span><span class="p">:</span>
+        <span class="k">await</span> <span class="n">client</span><span class="p">.</span><span class="n">is_connected</span><span class="p">()</span>
+
+        <span class="c1"># Write the payload to the characteristic
+</span>        <span class="k">await</span> <span class="n">client</span><span class="p">.</span><span class="n">write_gatt_char</span><span class="p">(</span><span class="n">characteristic_uuid</span><span class="p">,</span> <span class="n">payload</span><span class="p">,</span> <span class="n">response</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+
+        <span class="c1"># Disconnect from the device
+</span>        <span class="k">await</span> <span class="n">client</span><span class="p">.</span><span class="n">disconnect</span><span class="p">()</span>
+
+<span class="c1"># Run the write_payload coroutine
+</span><span class="n">loop</span> <span class="o">=</span> <span class="n">asyncio</span><span class="p">.</span><span class="n">get_event_loop</span><span class="p">()</span>
+<span class="n">loop</span><span class="p">.</span><span class="n">run_until_complete</span><span class="p">(</span><span class="n">write_payload</span><span class="p">())</span>
+</code></pre></div></div>
+
+<p>In the provided code snippet, the <code class="language-plaintext highlighter-rouge">device_address</code> variable represents the MAC address of the Bluetooth device you want to connect to. It is a unique identifier assigned to each Bluetooth device. You should replace the <code class="language-plaintext highlighter-rouge">device_address</code> value with the actual MAC address of your target device.</p>
+
+<p>The <code class="language-plaintext highlighter-rouge">characteristic_uuid</code> variable represents the UUID (Universally Unique Identifier) of the specific characteristic on the Bluetooth device that you want to interact with. Characteristics are attributes of a Bluetooth device that enable specific functionalities or data exchange. You should replace the <code class="language-plaintext highlighter-rouge">characteristic_uuid</code> value with the actual UUID of the characteristic you intend to communicate with.</p>
+
+<p>By knowing the MAC address and characteristic UUID, you can establish a connection with the Bluetooth device and utilize the corresponding characteristic to perform operations such as reading, writing, or subscribing to data.</p>
+
+<p>There are multiple methods to obtain the MAC addresses and characteristics UUID of the target device. One approach is to write a simple code snippet using the <code class="language-plaintext highlighter-rouge">bleak</code> library, while another option is to utilize Android applications such as <code class="language-plaintext highlighter-rouge">Bluetooth Terminal</code>.</p>
+
+<p>By following these steps, we have successfully achieved control over the LED strip using our custom client. While we could continue expanding the functionalities of our client, for the purpose of this blog post, it is sufficient to conclude our exploration here.</p>
+
+<h3 id="conclusion">Conclusion</h3>
+
+<p>In conclusion, through our exploration, we have demonstrated the process of reverse engineering a communication protocol and controlling an LED strip. By utilizing the power of Frida, we were able to identify the relevant functions responsible for sending commands to the LED strip. By hooking these functions and capturing the command payloads, we gained insights into the communication protocol.</p>
+
+<p>With this knowledge, we successfully developed a custom client that allows us to control the LED strip independently of the original mobile application. By sending the captured commands, we could turn the LED strip on and off, change its colors, and switch between different lighting modes.</p>
+
+<p>It is important to acknowledge that achieving the desired outcome quickly is not always guaranteed in every reverse engineering scenario. The complexity of protocols and security measures can vary greatly, often necessitating more extensive analysis and reverse engineering efforts. However, in our case, the dynamic analysis approach we employed proved to be highly effective, significantly accelerating the process and saving us many hours of traditional reverse engineering work.</p>
+
+<p>Overall, this post demonstrates the excitement and possibilities that arise from reverse engineering and taking control over IoT devices, opening up new avenues for customization and creativity.</p>
+
+<p>I hope it was helpful. If you have any further questions, please feel free to reach out.</p>
+
+<h3 id="references">References</h3>
+<ul>
+  <li><a href="https://www.frida.re/docs/javascript-api">frida.re docs</a></li>
+  <li><a href="https://developer.android.com/reference/android/bluetooth/BluetoothGattCharacteristic#setValue(java.lang.String)">BluetoothGattCharacteristic</a></li>
+  <li><a href="https://learnfrida.info/">Frida HandBook</a></li>
+</ul>
+
+<h3 id="read-more">Read More</h3>
+<ul>
+  <li><a href="/posts/frida-by-example">Frida by example: bypassing IsDebuggerPresent() check</a></li>
+  <li><a href="https://github.com/MikeCoder96/HappyLighting-py">MikeCoder96 / HappyLighting-py</a></li>
+</ul>
+
+  </article>
+  
+  
+
+
+
+
+</div>
+
+        </div>
+        <div class="col-second">
+          <div class="col-box col-box-author">
+  <img class="avatar" src="https://en.gravatar.com/userimage/156357779/a780a38ea0048d30d1aa273a4057f927.jpg?size=135" alt="Hamidreza Babaee">
+  <div class="col-box-title name">Hamidreza Babaee</div>
+  <p>deep dive into binaries.</p>
+  <p class="contact">
+    
+    
+    
+    <a href="mailto:morpix@pm.me">Email</a>
+    
+    <a href="https://github.com/lopqto">GitHub</a>
+    
+    <a href="https://twitter.com/lopqto">Twitter</a>
+    
+  </p>
+</div>
+
+<div class="col-box">
+  <div class="col-box-title">Newest Posts</div>
+  <ul class="post-list">
+    
+      <li><a class="post-link" href="/posts/from-laziness-to-control">From Laziness to Control: Reversing an IoT device using Frida</a></li>
+    
+      <li><a class="post-link" href="/posts/building-highly-interactive-honeypots">Building highly interactive honeypots: CVE-2021-41773 case study</a></li>
+    
+      <li><a class="post-link" href="/posts/automated-dynamic-import-resolving">Automated dynamic import resolving using binary emulation</a></li>
+    
+      <li><a class="post-link" href="/posts/automated-malware-unpacking">Automated malware unpacking with binary emulation</a></li>
+    
+      <li><a class="post-link" href="/posts/netwire-decrypting-keylog-file">Decrypting NetWire's keylog files</a></li>
+    
+  </ul>
+</div>
+
+<div class="col-box post-toc hide">
+  <div class="col-box-title">TOC</div>
+</div>
+
+        </div>
+      </div>
+    </div>
+
+    <footer class="footer">
+<div class="wrapper">
+&copy; 2023 Hamidreza Babaee
+</div>
+</footer>
+
+<script type="text/x-mathjax-config">MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$']]}});</script>
+<script src="/js/easybook.js"></script>
+
+
+  </body>
+
+</html>

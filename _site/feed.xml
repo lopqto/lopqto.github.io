@@ -4,11 +4,311 @@
     <title>lopqto&apos;s adventures</title>
     <description>Personal blog of Hamidreza Babaee. Reverse engineering, malware analysis, and vulnerability researching.
 </description>
-    <link>http://localhost:4000/</link>
-    <atom:link href="http://localhost:4000/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Fri, 19 May 2023 16:15:37 +0330</pubDate>
-    <lastBuildDate>Fri, 19 May 2023 16:15:37 +0330</lastBuildDate>
+    <link>https://lopqto.me/</link>
+    <atom:link href="https://lopqto.me/feed.xml" rel="self" type="application/rss+xml"/>
+    <pubDate>Tue, 13 Jun 2023 20:04:48 +0330</pubDate>
+    <lastBuildDate>Tue, 13 Jun 2023 20:04:48 +0330</lastBuildDate>
     <generator>Jekyll v3.9.3</generator>
+    
+      <item>
+        <title>From Laziness to Control: Reversing an IoT device using Frida</title>
+        <description>&lt;p&gt;Have you ever had that irresistible urge to take apart a cheap IoT device you bought from a random store? You know, that feeling that says, “Let’s dive into the mystery and figure out how this thing actually works!” But then you stop and ask yourself, “Why am I even doing this?” and struggle to come up with a good reason. Well, let me tell you, if there was a Ph.D. for taking apart useless things, I’d probably have earned it!&lt;/p&gt;
+
+&lt;p&gt;Today, we’re going to explore the exciting world of reverse engineering, with a focus on understanding the device’s communication protocol. And here’s my little secret: this is my go-to trick when I’m feeling a bit lazy. Get ready for some tech magic, my friends!&lt;/p&gt;
+
+&lt;h3 id=&quot;exploring-the-target-device&quot;&gt;Exploring the Target Device&lt;/h3&gt;
+
+&lt;p&gt;Alright, let’s kick off our journey by addressing the question: What are we going to reverse engineer? Last week, I purchased an LED strip stand (as shown in the image), which came with a controller and a questionable phone app. From my experience, these types of apps usually communicate through Bluetooth. However, I’m not entirely certain about the controller itself. It could be using infrared, Bluetooth, or maybe even something entirely different (but probably not)?&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/img/from-laziness-to-control1.jpg&quot; alt=&quot;LED strip stand&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/img/from-laziness-to-control2.jpg&quot; alt=&quot;Mobile app&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Now, here’s the deal: I want to ditch the app because it’s been tickeling me crazy. To achieve this, I need to uncover the commands that are being sent from the app to the LED strip. Once I have a clear understanding of these commands, I can rewrite them in a programming language that I’m comfortable with. So, our goal is set: let’s crack the code.&lt;/p&gt;
+
+&lt;h3 id=&quot;choosing-the-right-approach&quot;&gt;Choosing the Right Approach&lt;/h3&gt;
+
+&lt;p&gt;In order to achieve our goal of taking down the app and gaining control over our LED strip, we have several options available. Let’s explore each one:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;
+    &lt;p&gt;Dump the LED strip’s firmware and reverse it: This approach involves extracting and analyzing the firmware of the LED strip itself. However, it requires extensive knowledge of hardware and may consume a significant amount of time and effort. Considering the complexity and potential challenges, this approach may not be the most convenient choice for a simple strip light.&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;Dump the controller’s firmware: This method involves extracting and examining the firmware of the controller. Similar to the previous approach, it requires hardware knowledge and can be time-consuming. While it provides valuable insights, it may not be the most suitable option for our scenario.&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;Use a magical device to sniff Bluetooth communication: This option involves employing a specialized device to intercept and analyze the Bluetooth communication between the app and the LED strip. Unfortunately, obtaining such a device might be difficult or costly, making it less reliable for our purposes.&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;Dissect the mobile app and reverse engineer it: This is the approach I have chosen, and let me tell you why. Tackling the mobile app allows us to dive into its inner workings, understand the commands it sends to the LED strip, and ultimately rewrite those commands according to our preferences. It’s a more accessible option, requiring reverse engineering skills but without the hardware-intensive aspects of the other methods.&lt;/p&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Considering my inclination toward efficiency and laziness, focusing on dissecting and reverse engineering the mobile app appears to be the most favorable path forward. Let’s dive into the app’s code and unveil its secrets!&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/img/from-laziness-to-control3.png&quot; alt=&quot;Byte code viewer&apos;s output&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;When we’re faced with a big challenge like reading lots of messy code written in Java or Kotlin, it can be really tiring to go through it all by hand. But don’t worry, I’ve got a solution that’s both efficient and effective. Our main goal is still clear: we want to figure out how the app communicates and extract the important commands, without getting too caught up in the app’s inner workings.&lt;/p&gt;
+
+&lt;p&gt;Here’s where dynamic analysis comes in. It’s a smart technique that lets us skip the hard work of reading all that code manually. Instead, we can focus on the most important parts. And to make things even easier, we’ll use Frida, a handy tool that can help us with our analysis.&lt;/p&gt;
+
+&lt;p&gt;By using dynamic analysis and Frida, we’ll be able to work smarter, not harder (I made up this excuse to cover up my laziness :d ). We’ll be able to find the key details of the communication protocol without getting lost in all the other stuff. Get ready to see how this combination of analysis and Frida can make our job much simpler and more efficient.&lt;/p&gt;
+
+&lt;h3 id=&quot;environment-setup&quot;&gt;Environment Setup&lt;/h3&gt;
+
+&lt;p&gt;Let’s set up the environment for our project. Here are the steps:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;
+    &lt;p&gt;Rooted Android device: We’ll need a real Android device that has been rooted for this project. Emulators won’t work because they don’t support the Bluetooth stack. Some emulators might have a simulated Bluetooth connection, but we need to connect to a real device. Also, install the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;HappyLighting&lt;/code&gt; app.&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;ADB (Android Debug Bridge): We’ll use ADB to communicate with the Android device. You can install ADB on Debian-based Linux distributions by running the following command:&lt;/p&gt;
+  &lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nb&quot;&gt;sudo &lt;/span&gt;apt &lt;span class=&quot;nb&quot;&gt;install &lt;/span&gt;adb
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Note: Make sure you have enabled &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Developer Options&lt;/code&gt; on your Android device.&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Frida: We also need to install Frida (You need Python) on both the computer and the Android device.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;On your computer, run the following command to install the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;frida-tools&lt;/code&gt;:&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;pip &lt;span class=&quot;nb&quot;&gt;install &lt;/span&gt;frida-tools
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;On the Android device, first download the appropriate &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;frida-server&lt;/code&gt; binary for your device’s CPU architecture from &lt;a href=&quot;https://github.com/frida/frida/releases&quot;&gt;here!&lt;/a&gt;. Then, push the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;frida-server&lt;/code&gt; to the device by running these commands:&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;adb push /path/to/frida-server /data/local/tmp/
+adb shell &lt;span class=&quot;nb&quot;&gt;chmod &lt;/span&gt;755 /data/local/tmp/frida-server
+adb shell /data/local/tmp/frida-server &amp;amp;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;To verify that everything is working correctly and that you can communicate with the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;frida-server&lt;/code&gt;, run the following command on your computer:&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;frida-ps &lt;span class=&quot;nt&quot;&gt;-U&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;You should see a list of running processes on your Android device.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/img/from-laziness-to-control4.png&quot; alt=&quot;frida-ps&apos;s output&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;With these steps completed, we have our environment set up and ready to go.&lt;/p&gt;
+
+&lt;h3 id=&quot;reversing-the-communication-protocol&quot;&gt;Reversing the Communication Protocol&lt;/h3&gt;
+
+&lt;p&gt;Finally, we’ve reached the exciting part where we dive into reversing and getting our hands dirty. But before we begin, let’s discuss our approach. If you’re already familiar with Frida and how it works, great! If not, take a quick look &lt;a href=&quot;https://learnfrida.info/&quot;&gt;here!&lt;/a&gt; to get acquainted.&lt;/p&gt;
+
+&lt;p&gt;In simple terms, our goal is to find the specific function responsible for sending commands to the LED strip device, hook it using Frida, and log those commands. This way, we can reimplement a basic Bluetooth client and send the commands ourselves.&lt;/p&gt;
+
+&lt;p&gt;Now, you might be wondering how we can achieve this without delving into the complexities of reversing the Android application. Well, let’s take a step back and think outside the box for a moment. Do we really need to locate specific functions? In fact, what is the “right” function we want to hook?&lt;/p&gt;
+
+&lt;p&gt;To answer that, we need to consider a different perspective. We’re interested in the last function in the chain of the functions that handles and sends the commands to the device. Why the last one? Because we want to capture the raw payload being sent to the device, including any checksums, encodings, or padding applied. We need the raw payload as our starting point. We can capture that payload, send it to the device, and see if it works. If it does, great! If not, we can backtrack and analyze the chain further.&lt;/p&gt;
+
+&lt;p&gt;So, what is this last function responsible for sending the Bluetooth payload? Well, you guessed it! It’s the Java Bluetooth function from the Android SDK. Ultimately, Java and the Android SDK are responsible for delivering the payload to Android’s Bluetooth stack. Therefore, we can conveniently ignore all the code and simply hook the Java Bluetooth function. That’s all there is to it. We can reverse the communication protocol without actually having to reverse the entire application (if we’re fortunate enough that capturing and emulating the raw payload works for us).&lt;/p&gt;
+
+&lt;p&gt;With this approach, we’re ready to uncover the secrets of the communication protocol and create our own Bluetooth client. It’s time to embark on this reverse engineering journey and see where it takes us!&lt;/p&gt;
+
+&lt;p&gt;To implement hooking with Frida, we need to find the Bluetooth function’s signature. After some searching, we come across the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;android.bluetooth.BluetoothGattCharacteristic&lt;/code&gt; class, which has a function called &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;setValue&lt;/code&gt; responsible for sending payloads through Bluetooth. The function signature is as follows:&lt;/p&gt;
+
+&lt;div class=&quot;language-java highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;boolean&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;setValue&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nc&quot;&gt;String&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;value&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Take your time and look at the examples provided by Frida docs &lt;a href=&quot;https://frida.re/docs/examples/android/&quot;&gt;here!&lt;/a&gt;. Now, let’s write a proper hook for the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;setValue&lt;/code&gt; function using Frida:&lt;/p&gt;
+
+&lt;div class=&quot;language-javascript highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nx&quot;&gt;Java&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;perform&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    
+    &lt;span class=&quot;kd&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;BluetoothGattCharacteristic&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;Java&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;use&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&apos;&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;android.bluetooth.BluetoothGattCharacteristic&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&apos;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+  
+    &lt;span class=&quot;c1&quot;&gt;// setValue(String)&lt;/span&gt;
+    &lt;span class=&quot;nx&quot;&gt;BluetoothGattCharacteristic&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;setValue&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;overload&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&apos;&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;java.lang.String&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&apos;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;).&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;implementation&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;value&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+      &lt;span class=&quot;nx&quot;&gt;console&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;log&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&apos;&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;[BluetoothGattCharacteristic.setValue] Value (String): &lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&apos;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;value&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+  
+      &lt;span class=&quot;c1&quot;&gt;// Call the original method and return the result&lt;/span&gt;
+      &lt;span class=&quot;kd&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;result&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;this&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;setValue&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;value&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+      &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;result&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;};&lt;/span&gt;
+
+  &lt;span class=&quot;p&quot;&gt;});&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;This code sets up a hook on the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;android.bluetooth.BluetoothGattCharacteristic.setValue()&lt;/code&gt; function. Whenever this function is called, it will log the inputs (hopefully the commands we’re looking for) to the console.&lt;/p&gt;
+
+&lt;p&gt;However, we notice that there are three more &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;overloads&lt;/code&gt; for this function, as mentioned in the Android Developer documentation &lt;a href=&quot;https://developer.android.com/reference/android/bluetooth/BluetoothGattCharacteristic#setValue(java.lang.String)&quot;&gt;here!&lt;/a&gt;.&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;In Java, method overloading is the ability to define more than one method with the same name in a class. The compiler is able to distinguish between the methods because of their method signatures1. This means that multiple methods can have the same name as long as the number and/or type of parameters are different. Method overloading is mainly used to increase the readability of the program; to make it look better. For example, instead of defining two methods that should do the same thing, it is better to overload one.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;To ensure we don’t miss anything, let’s implement hooks for these overloads as well:&lt;/p&gt;
+
+&lt;div class=&quot;language-javascript highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nx&quot;&gt;Java&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;perform&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;BluetoothGattCharacteristic&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;Java&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;use&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&apos;&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;android.bluetooth.BluetoothGattCharacteristic&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&apos;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+  
+    &lt;span class=&quot;c1&quot;&gt;// Overload 1: setValue(String)&lt;/span&gt;
+    &lt;span class=&quot;nx&quot;&gt;BluetoothGattCharacteristic&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;setValue&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;overload&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&apos;&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;java.lang.String&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&apos;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;).&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;implementation&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;value&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+      &lt;span class=&quot;nx&quot;&gt;console&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;log&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&apos;&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;[BluetoothGattCharacteristic.setValue] Value (String): &lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&apos;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;value&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+  
+      &lt;span class=&quot;c1&quot;&gt;// Call the original method and return the result&lt;/span&gt;
+      &lt;span class=&quot;kd&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;result&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;this&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;setValue&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;value&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+      &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;result&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;};&lt;/span&gt;
+  
+    &lt;span class=&quot;c1&quot;&gt;// Overload 2: setValue(byte[])&lt;/span&gt;
+    &lt;span class=&quot;nx&quot;&gt;BluetoothGattCharacteristic&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;setValue&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;overload&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&apos;&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;[B&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&apos;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;).&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;implementation&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;value&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+      &lt;span class=&quot;c1&quot;&gt;// Convert byte array to hex string&lt;/span&gt;
+      &lt;span class=&quot;kd&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;hexValue&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;bytesToHex&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;value&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+  
+      &lt;span class=&quot;nx&quot;&gt;console&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;log&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&apos;&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;[BluetoothGattCharacteristic.setValue] Value (byte[]): &lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&apos;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;hexValue&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+  
+      &lt;span class=&quot;c1&quot;&gt;// Call the original method and return the result&lt;/span&gt;
+      &lt;span class=&quot;kd&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;result&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;this&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;setValue&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;value&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+      &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;result&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;};&lt;/span&gt;
+  
+    &lt;span class=&quot;c1&quot;&gt;// Overload 3: setValue(int, int, int)&lt;/span&gt;
+    &lt;span class=&quot;nx&quot;&gt;BluetoothGattCharacteristic&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;setValue&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;overload&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&apos;&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;int&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&apos;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;dl&quot;&gt;&apos;&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;int&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&apos;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;dl&quot;&gt;&apos;&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;int&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&apos;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;).&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;implementation&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;value1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;value2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;value3&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+      &lt;span class=&quot;nx&quot;&gt;console&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;log&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&apos;&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;[BluetoothGattCharacteristic.setValue] Values (int, int, int): &lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&apos;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;value1&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;dl&quot;&gt;&apos;&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;, &lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&apos;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;value2&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;dl&quot;&gt;&apos;&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;, &lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&apos;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;value3&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+  
+      &lt;span class=&quot;c1&quot;&gt;// Call the original method and return the result&lt;/span&gt;
+      &lt;span class=&quot;kd&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;result&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;this&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;setValue&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;value1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;value2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;value3&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+      &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;result&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;};&lt;/span&gt;
+  
+    &lt;span class=&quot;c1&quot;&gt;// Overload 4: setValue(int, int, int, int)&lt;/span&gt;
+    &lt;span class=&quot;nx&quot;&gt;BluetoothGattCharacteristic&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;setValue&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;overload&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&apos;&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;int&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&apos;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;dl&quot;&gt;&apos;&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;int&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&apos;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;dl&quot;&gt;&apos;&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;int&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&apos;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;dl&quot;&gt;&apos;&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;int&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&apos;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;).&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;implementation&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;value1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;value2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;value3&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;value4&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+      &lt;span class=&quot;nx&quot;&gt;console&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;log&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&apos;&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;[BluetoothGattCharacteristic.setValue] Values (int, int, int, int): &lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&apos;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;value1&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;dl&quot;&gt;&apos;&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;, &lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&apos;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;value2&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;dl&quot;&gt;&apos;&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;, &lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&apos;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;value3&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;dl&quot;&gt;&apos;&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;, &lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&apos;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;value4&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+  
+      &lt;span class=&quot;c1&quot;&gt;// Call the original method and return the result&lt;/span&gt;
+      &lt;span class=&quot;kd&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;result&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;this&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;setValue&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;value1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;value2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;value3&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;value4&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+      &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;result&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;};&lt;/span&gt;
+  
+    &lt;span class=&quot;c1&quot;&gt;// Helper function to convert a byte array to a hex string&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;bytesToHex&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;bytes&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+      &lt;span class=&quot;kd&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;hexArray&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[];&lt;/span&gt;
+      &lt;span class=&quot;k&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kd&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;i&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;i&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;bytes&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;length&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;++&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;i&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;kd&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;byteString&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;bytes&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;i&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;amp;&lt;/span&gt; &lt;span class=&quot;mh&quot;&gt;0xff&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;).&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;toString&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;16&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+        &lt;span class=&quot;nx&quot;&gt;hexArray&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;push&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;byteString&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;length&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;===&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;?&lt;/span&gt; &lt;span class=&quot;dl&quot;&gt;&apos;&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&apos;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;byteString&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;byteString&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+      &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+      &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;hexArray&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;join&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&apos;&apos;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+  &lt;span class=&quot;p&quot;&gt;});&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;With this code, we have implemented hooks for all the overloads of the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;setValue&lt;/code&gt; function. Each hook will log the inputs to the console, allowing us to capture the commands we’re interested in. This way, we can move forward with analyzing and emulating the captured commands.&lt;/p&gt;
+
+&lt;p&gt;To run Frida with the hooks and capture the output, execute the following command in the terminal:&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;frida &lt;span class=&quot;nt&quot;&gt;-U&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-f&lt;/span&gt; com.xiaoyu.hlight &lt;span class=&quot;nt&quot;&gt;-l&lt;/span&gt; bt_hooks.js
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;bt_hooks.js&lt;/code&gt; is the filename of the JavaScript code containing the hooks and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;com.xiaoyu.hlight&lt;/code&gt; is the package name of the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;HappyLighting&lt;/code&gt; app.&lt;/p&gt;
+
+&lt;p&gt;Once the Frida script is running, you can test the functionality by turning the LED strip on and off using the app. The console output should display the captured commands.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/img/from-laziness-to-control5.png&quot; alt=&quot;On &amp;amp; Off console log&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;In this case, we see that &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;cc2333&lt;/code&gt; is the command for turning on the LED strip, while &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;cc2433&lt;/code&gt; is the command for turning it off. The static parts &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;cc&lt;/code&gt; and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;33&lt;/code&gt; indicate some command indicator, and we can assume that &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;23&lt;/code&gt; is for turning on the LED strip and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;24&lt;/code&gt; is for turning it off.&lt;/p&gt;
+
+&lt;p&gt;Hopefully, by sending these commands (&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;cc2333&lt;/code&gt; to turn on and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;cc2433&lt;/code&gt; to turn off) to the LED strip ourselves, we can control its status accordingly.&lt;/p&gt;
+
+&lt;p&gt;To further explore the functionality and reverse-engineer the commands, let’s change the LED strip’s mode through the application and observe the corresponding commands. By switching between the “Rainbow pulsating” and “Red pulsating” modes multiple times, we can capture the commands associated with each mode.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/img/from-laziness-to-control6.png&quot; alt=&quot;Mode switch console log&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;After analyzing the captured commands, we can observe that &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;bb260f44&lt;/code&gt; corresponds to the “Rainbow pulsating” mode, while &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;bb250f44&lt;/code&gt; corresponds to the “Red pulsating” mode. From our previous understanding of the command structure, we can deduce that the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;bb&lt;/code&gt; and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;44&lt;/code&gt; parts likely serve as command indicators.&lt;/p&gt;
+
+&lt;p&gt;However, we notice another part in the commands: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;0f&lt;/code&gt;. By further experimentation, specifically by adjusting the speed of the effect, we can observe that the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;0f&lt;/code&gt; portion changes accordingly. For example, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;01&lt;/code&gt; represents the maximum speed, while &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;1f&lt;/code&gt; corresponds to the minimum speed.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/img/from-laziness-to-control7.png&quot; alt=&quot;Speed change console log&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Therefore, we can conclude that the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;0f&lt;/code&gt; portion of the command likely represents the speed parameter, with different values indicating various speed settings.&lt;/p&gt;
+
+&lt;p&gt;I believe we can wrap things up at this point since I think I have successfully demonstrated the concept I had in mind. Now, let’s proceed to the next section where we will develop a straightforward client application to control the LED strip.&lt;/p&gt;
+
+&lt;h3 id=&quot;writing-a-custom-client&quot;&gt;Writing a Custom Client&lt;/h3&gt;
+
+&lt;p&gt;To write a simple client, I opted for &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Python&lt;/code&gt; as my preferred language since it’s the one I usually turn to when exploring new concepts. However, you are free to choose any programming language that you’re comfortable with.&lt;/p&gt;
+
+&lt;p&gt;Here’s the code:&lt;/p&gt;
+
+&lt;div class=&quot;language-python highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;
+&lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;asyncio&lt;/span&gt;
+&lt;span class=&quot;kn&quot;&gt;from&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;bleak&lt;/span&gt; &lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;BleakClient&lt;/span&gt;
+
+&lt;span class=&quot;c1&quot;&gt;# Bluetooth device information
+&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;device_address&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;92:3B:12:00:0D:B2&quot;&lt;/span&gt;  &lt;span class=&quot;c1&quot;&gt;# MAC address of the device
+&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;characteristic_uuid&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;0000ffd9-0000-1000-8000-00805f9b34fb&quot;&lt;/span&gt;  &lt;span class=&quot;c1&quot;&gt;# UUID of the characteristic
+&lt;/span&gt;
+&lt;span class=&quot;c1&quot;&gt;# Payload in hex string format
+&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;payload&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;bytearray&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;fromhex&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;cc2333&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;async&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;def&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;write_payload&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;():&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;async&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;with&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;BleakClient&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;device_address&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;as&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;client&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;await&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;client&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;is_connected&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+
+        &lt;span class=&quot;c1&quot;&gt;# Write the payload to the characteristic
+&lt;/span&gt;        &lt;span class=&quot;k&quot;&gt;await&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;client&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;write_gatt_char&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;characteristic_uuid&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;payload&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;response&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;bp&quot;&gt;False&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+
+        &lt;span class=&quot;c1&quot;&gt;# Disconnect from the device
+&lt;/span&gt;        &lt;span class=&quot;k&quot;&gt;await&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;client&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;disconnect&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+
+&lt;span class=&quot;c1&quot;&gt;# Run the write_payload coroutine
+&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;loop&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;asyncio&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;get_event_loop&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;loop&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;run_until_complete&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;write_payload&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;())&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;In the provided code snippet, the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;device_address&lt;/code&gt; variable represents the MAC address of the Bluetooth device you want to connect to. It is a unique identifier assigned to each Bluetooth device. You should replace the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;device_address&lt;/code&gt; value with the actual MAC address of your target device.&lt;/p&gt;
+
+&lt;p&gt;The &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;characteristic_uuid&lt;/code&gt; variable represents the UUID (Universally Unique Identifier) of the specific characteristic on the Bluetooth device that you want to interact with. Characteristics are attributes of a Bluetooth device that enable specific functionalities or data exchange. You should replace the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;characteristic_uuid&lt;/code&gt; value with the actual UUID of the characteristic you intend to communicate with.&lt;/p&gt;
+
+&lt;p&gt;By knowing the MAC address and characteristic UUID, you can establish a connection with the Bluetooth device and utilize the corresponding characteristic to perform operations such as reading, writing, or subscribing to data.&lt;/p&gt;
+
+&lt;p&gt;There are multiple methods to obtain the MAC addresses and characteristics UUID of the target device. One approach is to write a simple code snippet using the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;bleak&lt;/code&gt; library, while another option is to utilize Android applications such as &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Bluetooth Terminal&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;By following these steps, we have successfully achieved control over the LED strip using our custom client. While we could continue expanding the functionalities of our client, for the purpose of this blog post, it is sufficient to conclude our exploration here.&lt;/p&gt;
+
+&lt;h3 id=&quot;conclusion&quot;&gt;Conclusion&lt;/h3&gt;
+
+&lt;p&gt;In conclusion, through our exploration, we have demonstrated the process of reverse engineering a communication protocol and controlling an LED strip. By utilizing the power of Frida, we were able to identify the relevant functions responsible for sending commands to the LED strip. By hooking these functions and capturing the command payloads, we gained insights into the communication protocol.&lt;/p&gt;
+
+&lt;p&gt;With this knowledge, we successfully developed a custom client that allows us to control the LED strip independently of the original mobile application. By sending the captured commands, we could turn the LED strip on and off, change its colors, and switch between different lighting modes.&lt;/p&gt;
+
+&lt;p&gt;It is important to acknowledge that achieving the desired outcome quickly is not always guaranteed in every reverse engineering scenario. The complexity of protocols and security measures can vary greatly, often necessitating more extensive analysis and reverse engineering efforts. However, in our case, the dynamic analysis approach we employed proved to be highly effective, significantly accelerating the process and saving us many hours of traditional reverse engineering work.&lt;/p&gt;
+
+&lt;p&gt;Overall, this post demonstrates the excitement and possibilities that arise from reverse engineering and taking control over IoT devices, opening up new avenues for customization and creativity.&lt;/p&gt;
+
+&lt;p&gt;I hope it was helpful. If you have any further questions, please feel free to reach out.&lt;/p&gt;
+
+&lt;h3 id=&quot;references&quot;&gt;References&lt;/h3&gt;
+&lt;ul&gt;
+  &lt;li&gt;&lt;a href=&quot;https://www.frida.re/docs/javascript-api&quot;&gt;frida.re docs&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://developer.android.com/reference/android/bluetooth/BluetoothGattCharacteristic#setValue(java.lang.String)&quot;&gt;BluetoothGattCharacteristic&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://learnfrida.info/&quot;&gt;Frida HandBook&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;read-more&quot;&gt;Read More&lt;/h3&gt;
+&lt;ul&gt;
+  &lt;li&gt;&lt;a href=&quot;/posts/frida-by-example&quot;&gt;Frida by example: bypassing IsDebuggerPresent() check&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://github.com/MikeCoder96/HappyLighting-py&quot;&gt;MikeCoder96 / HappyLighting-py&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+</description>
+        <pubDate>Tue, 13 Jun 2023 03:30:00 +0330</pubDate>
+        <link>https://lopqto.me/posts/from-laziness-to-control</link>
+        <guid isPermaLink="true">https://lopqto.me/posts/from-laziness-to-control</guid>
+        
+        
+        <category>reverse-engineering</category>
+        
+        <category>hardware</category>
+        
+      </item>
     
       <item>
         <title>Building highly interactive honeypots: CVE-2021-41773 case study</title>
@@ -316,8 +616,8 @@
 &lt;/ul&gt;
 </description>
         <pubDate>Sun, 17 Oct 2021 03:30:00 +0330</pubDate>
-        <link>http://localhost:4000/posts/building-highly-interactive-honeypots</link>
-        <guid isPermaLink="true">http://localhost:4000/posts/building-highly-interactive-honeypots</guid>
+        <link>https://lopqto.me/posts/building-highly-interactive-honeypots</link>
+        <guid isPermaLink="true">https://lopqto.me/posts/building-highly-interactive-honeypots</guid>
         
         
         <category>security-engineering</category>
@@ -631,8 +931,8 @@ For example, in this sample, there are plenty of approaches that you can use; ho
 &lt;/ul&gt;
 </description>
         <pubDate>Tue, 08 Sep 2020 04:30:00 +0430</pubDate>
-        <link>http://localhost:4000/posts/automated-dynamic-import-resolving</link>
-        <guid isPermaLink="true">http://localhost:4000/posts/automated-dynamic-import-resolving</guid>
+        <link>https://lopqto.me/posts/automated-dynamic-import-resolving</link>
+        <guid isPermaLink="true">https://lopqto.me/posts/automated-dynamic-import-resolving</guid>
         
         
         <category>reverse-engineering</category>
@@ -921,8 +1221,8 @@ Qiling Framework is open source and it is written in Python, a simple and common
 &lt;/ul&gt;
 </description>
         <pubDate>Sun, 24 May 2020 04:30:00 +0430</pubDate>
-        <link>http://localhost:4000/posts/automated-malware-unpacking</link>
-        <guid isPermaLink="true">http://localhost:4000/posts/automated-malware-unpacking</guid>
+        <link>https://lopqto.me/posts/automated-malware-unpacking</link>
+        <guid isPermaLink="true">https://lopqto.me/posts/automated-malware-unpacking</guid>
         
         
         <category>reverse-engineering</category>
@@ -998,8 +1298,8 @@ Keylog files are stored on the infected machine in an obfuscated form. &lt;a hre
 &lt;/ul&gt;
 </description>
         <pubDate>Sun, 29 Mar 2020 04:30:00 +0430</pubDate>
-        <link>http://localhost:4000/posts/netwire-decrypting-keylog-file</link>
-        <guid isPermaLink="true">http://localhost:4000/posts/netwire-decrypting-keylog-file</guid>
+        <link>https://lopqto.me/posts/netwire-decrypting-keylog-file</link>
+        <guid isPermaLink="true">https://lopqto.me/posts/netwire-decrypting-keylog-file</guid>
         
         
         <category>reverse-engineering</category>
@@ -1123,8 +1423,8 @@ When it is finished with these it will jump to the entry point.&lt;/li&gt;
 &lt;/ul&gt;
 </description>
         <pubDate>Sun, 01 Mar 2020 19:10:00 +0330</pubDate>
-        <link>http://localhost:4000/posts/crackmes-for-lazies</link>
-        <guid isPermaLink="true">http://localhost:4000/posts/crackmes-for-lazies</guid>
+        <link>https://lopqto.me/posts/crackmes-for-lazies</link>
+        <guid isPermaLink="true">https://lopqto.me/posts/crackmes-for-lazies</guid>
         
         
         <category>reverse-engineering</category>
@@ -1229,8 +1529,8 @@ Run the following command to inject our code and bypass the check:&lt;/p&gt;
 &lt;/ul&gt;
 </description>
         <pubDate>Sat, 20 Apr 2019 20:00:00 +0430</pubDate>
-        <link>http://localhost:4000/posts/frida-by-example</link>
-        <guid isPermaLink="true">http://localhost:4000/posts/frida-by-example</guid>
+        <link>https://lopqto.me/posts/frida-by-example</link>
+        <guid isPermaLink="true">https://lopqto.me/posts/frida-by-example</guid>
         
         
         <category>reverse-engineering</category>
