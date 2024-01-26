@@ -4,10 +4,10 @@
     <title>lopqto&apos;s adventures</title>
     <description>Personal blog of Hamidreza Babaee. Reverse engineering, malware analysis, and vulnerability researching.
 </description>
-    <link>https://lopqto.me/</link>
-    <atom:link href="https://lopqto.me/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Tue, 13 Jun 2023 20:04:48 +0330</pubDate>
-    <lastBuildDate>Tue, 13 Jun 2023 20:04:48 +0330</lastBuildDate>
+    <link>http://0.0.0.0:4000/</link>
+    <atom:link href="http://0.0.0.0:4000/feed.xml" rel="self" type="application/rss+xml"/>
+    <pubDate>Fri, 26 Jan 2024 15:42:08 +0330</pubDate>
+    <lastBuildDate>Fri, 26 Jan 2024 15:42:08 +0330</lastBuildDate>
     <generator>Jekyll v3.9.3</generator>
     
       <item>
@@ -300,8 +300,8 @@ adb shell /data/local/tmp/frida-server &amp;amp;
 &lt;/ul&gt;
 </description>
         <pubDate>Tue, 13 Jun 2023 03:30:00 +0330</pubDate>
-        <link>https://lopqto.me/posts/from-laziness-to-control</link>
-        <guid isPermaLink="true">https://lopqto.me/posts/from-laziness-to-control</guid>
+        <link>http://0.0.0.0:4000/posts/from-laziness-to-control</link>
+        <guid isPermaLink="true">http://0.0.0.0:4000/posts/from-laziness-to-control</guid>
         
         
         <category>reverse-engineering</category>
@@ -616,8 +616,8 @@ adb shell /data/local/tmp/frida-server &amp;amp;
 &lt;/ul&gt;
 </description>
         <pubDate>Sun, 17 Oct 2021 03:30:00 +0330</pubDate>
-        <link>https://lopqto.me/posts/building-highly-interactive-honeypots</link>
-        <guid isPermaLink="true">https://lopqto.me/posts/building-highly-interactive-honeypots</guid>
+        <link>http://0.0.0.0:4000/posts/building-highly-interactive-honeypots</link>
+        <guid isPermaLink="true">http://0.0.0.0:4000/posts/building-highly-interactive-honeypots</guid>
         
         
         <category>security-engineering</category>
@@ -931,8 +931,8 @@ For example, in this sample, there are plenty of approaches that you can use; ho
 &lt;/ul&gt;
 </description>
         <pubDate>Tue, 08 Sep 2020 04:30:00 +0430</pubDate>
-        <link>https://lopqto.me/posts/automated-dynamic-import-resolving</link>
-        <guid isPermaLink="true">https://lopqto.me/posts/automated-dynamic-import-resolving</guid>
+        <link>http://0.0.0.0:4000/posts/automated-dynamic-import-resolving</link>
+        <guid isPermaLink="true">http://0.0.0.0:4000/posts/automated-dynamic-import-resolving</guid>
         
         
         <category>reverse-engineering</category>
@@ -1221,8 +1221,8 @@ Qiling Framework is open source and it is written in Python, a simple and common
 &lt;/ul&gt;
 </description>
         <pubDate>Sun, 24 May 2020 04:30:00 +0430</pubDate>
-        <link>https://lopqto.me/posts/automated-malware-unpacking</link>
-        <guid isPermaLink="true">https://lopqto.me/posts/automated-malware-unpacking</guid>
+        <link>http://0.0.0.0:4000/posts/automated-malware-unpacking</link>
+        <guid isPermaLink="true">http://0.0.0.0:4000/posts/automated-malware-unpacking</guid>
         
         
         <category>reverse-engineering</category>
@@ -1298,8 +1298,8 @@ Keylog files are stored on the infected machine in an obfuscated form. &lt;a hre
 &lt;/ul&gt;
 </description>
         <pubDate>Sun, 29 Mar 2020 04:30:00 +0430</pubDate>
-        <link>https://lopqto.me/posts/netwire-decrypting-keylog-file</link>
-        <guid isPermaLink="true">https://lopqto.me/posts/netwire-decrypting-keylog-file</guid>
+        <link>http://0.0.0.0:4000/posts/netwire-decrypting-keylog-file</link>
+        <guid isPermaLink="true">http://0.0.0.0:4000/posts/netwire-decrypting-keylog-file</guid>
         
         
         <category>reverse-engineering</category>
@@ -1423,8 +1423,8 @@ When it is finished with these it will jump to the entry point.&lt;/li&gt;
 &lt;/ul&gt;
 </description>
         <pubDate>Sun, 01 Mar 2020 19:10:00 +0330</pubDate>
-        <link>https://lopqto.me/posts/crackmes-for-lazies</link>
-        <guid isPermaLink="true">https://lopqto.me/posts/crackmes-for-lazies</guid>
+        <link>http://0.0.0.0:4000/posts/crackmes-for-lazies</link>
+        <guid isPermaLink="true">http://0.0.0.0:4000/posts/crackmes-for-lazies</guid>
         
         
         <category>reverse-engineering</category>
@@ -1529,8 +1529,8 @@ Run the following command to inject our code and bypass the check:&lt;/p&gt;
 &lt;/ul&gt;
 </description>
         <pubDate>Sat, 20 Apr 2019 20:00:00 +0430</pubDate>
-        <link>https://lopqto.me/posts/frida-by-example</link>
-        <guid isPermaLink="true">https://lopqto.me/posts/frida-by-example</guid>
+        <link>http://0.0.0.0:4000/posts/frida-by-example</link>
+        <guid isPermaLink="true">http://0.0.0.0:4000/posts/frida-by-example</guid>
         
         
         <category>reverse-engineering</category>
