@@ -1,12 +1,12 @@
 # Site settings
 title: lopqto's adventures
-url: "https://lopqto.me"    # the protocol and hostname of your site, eg. `http://laobubu.github.io`
-baseurl: "" # the prefix of your site uri, eg. `"/jekyll-theme-EasyBook"` or empty string `""`
+url: "https://lopqto.me"
+baseurl: "" 
 timezone: Asia/Tehran
 description: >
   Personal blog of Hamidreza Babaee. Reverse engineering, malware analysis, and vulnerability researching.
 
-# Your information
+# Personal information
 email: morpix@protonmail.com
 author: Hamidreza Babaee
 avatar: "https://en.gravatar.com/userimage/156357779/a780a38ea0048d30d1aa273a4057f927.jpg?size=135"
@@ -17,12 +17,6 @@ profile_links:
   Email: "mailto:morpix@pm.me"
   GitHub: "https://github.com/lopqto"
   Twitter: "https://twitter.com/lopqto"
-  # You can add more profile links above, or edit _includes/sidebar.html 
-
-# Comment Service (Disqus or 多说)
-#  choose one and un-comment the line to active it
-#disqus_shortname: xxx   # get one: https://disqus.com/admin/signup/
-#duoshuo_shortname: xxx  # get one: http://duoshuo.com/create-site/
 
 excerpt_separator: <!--more-->
 
@@ -30,7 +24,6 @@ header:
   links:             # Links on the header. Link to in-site page with a slash as prefix
     About: /about/
     Category: /category/
-    # Donate: https://laobubu.net/donate.html
 
 permalink: /archivers/:title
 plugins:
