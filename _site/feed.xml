@@ -6,9 +6,413 @@
 </description>
     <link>https://lopqto.me/</link>
     <atom:link href="https://lopqto.me/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Sun, 17 Aug 2025 11:54:58 +0330</pubDate>
-    <lastBuildDate>Sun, 17 Aug 2025 11:54:58 +0330</lastBuildDate>
+    <pubDate>Sun, 17 Aug 2025 21:21:27 +0330</pubDate>
+    <lastBuildDate>Sun, 17 Aug 2025 21:21:27 +0330</lastBuildDate>
     <generator>Jekyll v3.9.3</generator>
+    
+      <item>
+        <title>Reversing a Remote Controller: A Case Study in RF Engineering</title>
+        <description>&lt;p&gt;Feeling bored, I decided to take on a personal challenge: reverse-engineer a toy’s remote controller. My goal was to gain practical experience with radio communication and create a custom controller with new features, like controlling it remotely over Wi-Fi. It’s a classic hands-on project that starts with a simple question: what makes this thing tick?&lt;/p&gt;
+
+&lt;h3 id=&quot;exploring-the-target-device&quot;&gt;Exploring the Target Device&lt;/h3&gt;
+
+&lt;p&gt;I had an adult toy with a remote controller laying around. The remote controller has 3 buttons for 3 different functions: power, change the rhythm of the bottom part, change the rhythm of the top part. I was suspecting that the remote controller uses radio waves to communicate with the toy like other similar remote controllers.&lt;/p&gt;
+
+&lt;p&gt;After opening the remote controller, My suspicion was confirmed.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/img/reversing-a-remote-controller1.png&quot; alt=&quot;Inside the remote controller&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;A few things immediately jumped out that pointed toward a specific frequency. The board is labeled &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;AYKJ006-TX&lt;/code&gt;, with &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;TX&lt;/code&gt; being the standard abbreviation for a transmitter. More importantly, the distinct, curvy copper line labeled &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ANT&lt;/code&gt; is clearly a PCB trace antenna. Simple, short-range remotes like this almost always operate in the unlicensed ISM bands, with 433 MHz being one of the most common frequencies worldwide. This made 433 MHz my primary suspect.&lt;/p&gt;
+
+&lt;p&gt;Let’s look at the components.&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;
+    &lt;p&gt;&lt;strong&gt;The Encoder and Transmitter IC (&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;U1&lt;/code&gt;)&lt;/strong&gt;&lt;/p&gt;
+
+    &lt;p&gt;The most important component on this board is the large black chip labeled &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;U1&lt;/code&gt;. It has 2 primary functions:&lt;/p&gt;
+  &lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;strong&gt;Encoder:&lt;/strong&gt; When user presses a button, it converts that action into a command.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Transmitter:&lt;/strong&gt; After generating the command, the chip modulates it onto a 433 MHz radio frequency carrier wave.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;
+    &lt;p&gt;&lt;strong&gt;The Crystal Oscillator (&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Y1&lt;/code&gt;)&lt;/strong&gt;&lt;/p&gt;
+
+    &lt;p&gt;The shiny, metallic component labeled &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Y1&lt;/code&gt; is a crystal oscillator. It generates a stable clock signal that is used by the main chip (&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;U1&lt;/code&gt;).&lt;/p&gt;
+
+    &lt;p&gt;If you look closely, you will notice it’s marked “13.560,” which means it vibrates at 13.560 MHz and not 433 MHz. This is a common engineering trick. The main chip (&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;U1&lt;/code&gt;) contains a circuit called a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Phase-Locked Loop (PLL)&lt;/code&gt;, which acts as a frequency multiplier. It takes the stable 13.560 MHz signal and multiplies it by 32 to generate the final transmission frequency:&lt;/p&gt;
+
+    &lt;pre&gt;&lt;code class=&quot;language-math&quot;&gt;13.560MHz × 32 = 433.92 MHz
+&lt;/code&gt;&lt;/pre&gt;
+
+    &lt;p&gt;It’s often cheaper and more stable to use a lower-frequency crystal and multiply it up.&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;&lt;strong&gt;The User Interface Components&lt;/strong&gt;&lt;/p&gt;
+
+    &lt;p&gt;There are 3 buttons for 3 different functions: power, change the rhythm of the bottom part, change the rhythm of the top part labeled as &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;S1&lt;/code&gt;, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;S2&lt;/code&gt;, and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;S3&lt;/code&gt;. Also there are 4 different LEDs labeled as &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;D1&lt;/code&gt;, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;D2&lt;/code&gt;, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;D3&lt;/code&gt;, and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;D4&lt;/code&gt;. They provide a visual feedback when the button is pressed.&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;&lt;strong&gt;Power Management Components&lt;/strong&gt;&lt;/p&gt;
+  &lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;strong&gt;Battery Terminals (&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;BAT+&lt;/code&gt; / &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;BAT-&lt;/code&gt;):&lt;/strong&gt; These are the metal contacts where the battery (CR2032) is connected to power the entire circuit.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Voltage Regulator (&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;U2&lt;/code&gt;):&lt;/strong&gt; Its job is to take the variable battery voltage and provide a constant, clean voltage (3.3V) that the main chip (&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;U1&lt;/code&gt;) needs to operate on.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;planning-the-next-steps&quot;&gt;Planning the Next Steps&lt;/h3&gt;
+
+&lt;p&gt;My goal was to reverse engineer the remote controller and create a custom one that can control the device. I needed to understand the communication protocol used by the remote controller to be able to replicate those signals. To achieve this, I had 2 options:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;&lt;strong&gt;Using a Logic Analyzer:&lt;/strong&gt; A logic analyzer is a tool that captures and displays digital signals within an electronic circuit. To use this method, I would have had to solder tiny wires directly to the pins of the encoder chip (&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;U1&lt;/code&gt;). This would let me “eavesdrop” on the exact digital commands the chip generates when a button is pressed, before they are turned into a radio wave.
+    &lt;ul&gt;
+      &lt;li&gt;
+        &lt;p&gt;&lt;strong&gt;Pros:&lt;/strong&gt; It provides a very clean, noise-free look at the digital data.&lt;/p&gt;
+      &lt;/li&gt;
+      &lt;li&gt;
+        &lt;p&gt;&lt;strong&gt;Cons:&lt;/strong&gt; It requires delicate soldering skills, risks damaging the board, and tells you nothing about the radio transmission part of the signal (the modulation).&lt;/p&gt;
+      &lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Using a Software Defined Radio (SDR):&lt;/strong&gt; An SDR is essentially a radio scanner for a computer. It’s a device that can be tuned to almost any frequency to receive raw radio signals directly from the air. I could use it to capture the exact 433 MHz signal the remote sends out, just as the toy’s receiver would hear it.
+    &lt;ul&gt;
+      &lt;li&gt;
+        &lt;p&gt;&lt;strong&gt;Pros:&lt;/strong&gt; It requires no physical modification to the remote. It captures the complete, final signal as it’s transmitted.&lt;/p&gt;
+      &lt;/li&gt;
+      &lt;li&gt;
+        &lt;p&gt;&lt;strong&gt;Cons:&lt;/strong&gt; The captured signal can have noise from other radio sources, and it requires software on a computer to process and decode the raw radio data back into a digital command.&lt;/p&gt;
+      &lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;Since I had an SDR device lying around and wanted a practical project to learn more about radio hacking, I decided to go with option 2.&lt;/p&gt;
+
+&lt;h3 id=&quot;capturing-the-radio-waves&quot;&gt;Capturing the Radio Waves&lt;/h3&gt;
+
+&lt;p&gt;To capture the radio waves, I plugged my RTL-SDR device into my computer and used a software suite called Universal Radio Hacker (&lt;a href=&quot;https://github.com/jopohl/urh&quot;&gt;URH&lt;/a&gt;).&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;The Universal Radio Hacker (URH) is a complete suite for wireless protocol investigation with native support for many common Software Defined Radios.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;With the software running, I configured my setup to get the cleanest signal possible:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;I tuned the SDR to the frequency of the remote (433 MHz).&lt;/li&gt;
+  &lt;li&gt;Next, I adjusted the gain. Since the remote was right next to the SDR’s antenna, the signal was very strong. A high gain would only amplify unnecessary background noise, so I lowered it significantly.&lt;/li&gt;
+  &lt;li&gt;Then, I created a ground plane to improve reception. For the simple monopole antenna that comes with most SDRs, placing it on a metal plate (or any large metal surface) acts as a ground plane, which helps stabilize the signal and reduce interference.&lt;/li&gt;
+  &lt;li&gt;Finally, I hit the record button in URH to start capturing.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;&lt;img src=&quot;/img/reversing-a-remote-controller4.png&quot; alt=&quot;URH configuration&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Voila! I had a clean, noise-free sample of the transmission. Now I could jump into the next part.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/img/reversing-a-remote-controller5.png&quot; alt=&quot;Captured signals&quot; /&gt;&lt;/p&gt;
+
+&lt;h3 id=&quot;probing-for-a-rolling-code&quot;&gt;Probing for a Rolling Code&lt;/h3&gt;
+
+&lt;p&gt;With everything ready, I began transmitting. The button for the toy’s top part (&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;S1&lt;/code&gt;) cycles through four different rhythm modes. To capture the full sequence and check for consistency, I pressed the button eight times, ensuring I recorded two full cycles of all four modes.&lt;/p&gt;
+
+&lt;p&gt;There was a critical reason for this repetition. &lt;strong&gt;I needed to check if the protocol had any “moving parts,” like a rolling code or a timestamp.&lt;/strong&gt; More secure systems, like car key fobs, change the code with every press to make replay attacks impossible. By capturing two sets of signals for each of the four modes, I could compare them. If the first signal for “mode 1” was identical to the second signal for “mode 1,” it would mean the code is static, and a simple replay attack would likely work.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;This was a make-or-break step.&lt;/strong&gt; If the code wasn’t static, I’d have to figure out how to generate the new code for each transmission. That would likely mean reverse-engineering the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;U1&lt;/code&gt; chip itself, and an SDR isn’t the right tool for that kind of task.&lt;/p&gt;
+
+&lt;p&gt;URH attempts to automatically analyze the signal and show the bits. In my case, its interpretation wasn’t perfect, but it didn’t need to be. It was clear enough to see that the payload was static. After each cycle, it sent the exact same payload for that mode.&lt;/p&gt;
+
+&lt;p&gt;As you can see, in the following image, searching for the single pattern resulted in 2 different groups of matches.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/img/reversing-a-remote-controller3.png&quot; alt=&quot;bits&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;That was the confirmation I needed. &lt;strong&gt;The device uses a static code, which means it’s completely vulnerable to a replay attack.&lt;/strong&gt; Game on.&lt;/p&gt;
+
+&lt;h3 id=&quot;demodulating-the-signal&quot;&gt;Demodulating the Signal&lt;/h3&gt;
+
+&lt;p&gt;In simple terms, modulation is the process of encoding digital data (our ones and zeros) onto a radio wave, and demodulation is getting that data back off the wave at the other end.&lt;/p&gt;
+
+&lt;p&gt;Figuring out the modulation type was straightforward once I looked at the captured signal. The pattern was a dead giveaway for &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Amplitude Shift Keying (ASK)&lt;/code&gt;, one of the simplest forms of digital modulation.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/img/reversing-a-remote-controller9.png&quot; alt=&quot;ASK modulation&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;The key thing to look for with ASK is the “on-off” nature of the transmission. When I viewed the signal in URH, I didn’t see a continuous wave that changed its shape. Instead, I saw a series of clean, distinct bursts of radio energy separated by total silence. This is the classic signature of ASK, meaning the transmitter sends a 1 by turning the 433 MHz carrier wave ON (high amplitude) and sends a 0 by turning it OFF (low amplitude, or silence).&lt;/p&gt;
+
+&lt;p&gt;But how does it know how long each 1 or 0 should be? That’s where the encoding scheme comes in.&lt;/p&gt;
+
+&lt;h4 id=&quot;what-is-a-pwm&quot;&gt;What is a PWM?&lt;/h4&gt;
+
+&lt;p&gt;The specific method this remote uses to structure its ones and zeros is a form of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Pulse Width Modulation (PWM)&lt;/code&gt;. Don’t let the name intimidate you; the concept is really simple. It uses pulses of different lengths (or widths) to represent different data.&lt;/p&gt;
+
+&lt;p&gt;Think of it like sending a message with a flashlight in the dark:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;strong&gt;To send a 1&lt;/strong&gt;, you might do a long flash followed by a short pause.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;&lt;img src=&quot;/img/reversing-a-remote-controller6.png&quot; alt=&quot;One&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;strong&gt;To send a 0&lt;/strong&gt;, you’d do a short flash followed by a long pause.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;&lt;img src=&quot;/img/reversing-a-remote-controller7.png&quot; alt=&quot;Zero&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;The receiver on the other end just has to measure the duration of each flash and each pause to reconstruct the original message. My remote does the exact same thing, just with radio waves instead of light and with timings measured in microseconds. By analyzing the captured signal, I could see two distinct pulse lengths, a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;short&lt;/code&gt; one and a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;long&lt;/code&gt; one, confirming that this was the method being used.&lt;/p&gt;
+
+&lt;h3 id=&quot;dissecting-a-command&quot;&gt;Dissecting a Command&lt;/h3&gt;
+
+&lt;p&gt;With the encoding method figured out, I could finally dissect a complete command. My first step was to lean on URH’s built-in analysis tools, which gave me a bird’s-eye view of the entire transmission structure.&lt;/p&gt;
+
+&lt;p&gt;A single press of a button wasn’t just one command; it was a whole conversation. The remote was clearly designed for reliability, sending its message multiple times to make sure the toy heard it correctly. The structure for every button press was identical:&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;1001111111111111111111 [Pause: 1898 samples]
+111110111110111110111000000011100000001111101110000000111110111000000011100000001110000000111110111110111000000011111011100000001010001111111111111111111 [Pause: 1897 samples]
+111110111110111110111000000011100000001111101110000000111110111000000011100000001110000000111110111110111000000011111011100000001010001111111111111111111 [Pause: 1897 samples]
+111110111110111110111000000011100000001111101110000000111110111000000011100000001110000000111110111110111000000011111011100000001010001111111111111111111 [Pause: 1898 samples]
+111110111110111110111000000011100000001111101110000000111110111000000011100000001110000000111110111110111000000011111011100000001010001111111111111111111 [Pause: 1895 samples]
+11111011111011111011100000001110000000111110111000000011111011100000001110000000111000000011111011111011100000001111101110000000101 [Pause: 490234 samples]
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;strong&gt;The Preamble:&lt;/strong&gt; A short, distinct initial pulse. &lt;strong&gt;This acts like a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;wake-up&lt;/code&gt; call&lt;/strong&gt; for the receiver, letting it know a real command is about to follow and allowing it to synchronize its clock.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;1001111111111111111111 [Pause: 1898 samples]
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;strong&gt;The Command Repeats:&lt;/strong&gt; The main data payload was sent back-to-back four times. This is a common strategy in simple RF devices. If the first transmission is garbled by interference, the receiver has more chances to get a clean copy.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;111110111110111110111000000011100000001111101110000000111110111000000011100000001110000000111110111110111000000011111011100000001010001111111111111111111 [Pause: 1897 samples]
+111110111110111110111000000011100000001111101110000000111110111000000011100000001110000000111110111110111000000011111011100000001010001111111111111111111 [Pause: 1897 samples]
+111110111110111110111000000011100000001111101110000000111110111000000011100000001110000000111110111110111000000011111011100000001010001111111111111111111 [Pause: 1898 samples]
+111110111110111110111000000011100000001111101110000000111110111000000011100000001110000000111110111110111000000011111011100000001010001111111111111111111 [Pause: 1895 samples]
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;strong&gt;The Trimmed Packet:&lt;/strong&gt; The transmission ended with a final, shorter burst of data. This was a truncated version of the main command, likely &lt;strong&gt;acting as a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;message over&lt;/code&gt; signal&lt;/strong&gt;.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;11111011111011111011100000001110000000111110111000000011111011100000001110000000111000000011111011111011100000001111101110000000101 [Pause: 490234 samples]
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;With the overall structure understood, I could focus on one of those identical, repeated blocks. By analyzing the repeating patterns of high (1) and low (0) samples, I could deduce the encoding “alphabet” for a single bit of data:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;
+    &lt;p&gt;&lt;strong&gt;Logical 1:&lt;/strong&gt; A long high pulse followed by a short low pulse. In the sampled data, this corresponds to the pattern &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;111110&lt;/code&gt;.&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;&lt;strong&gt;Logical 0:&lt;/strong&gt; A short high pulse followed by a long low pulse. In the sampled data, this corresponds to the pattern &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;1110000000&lt;/code&gt;.&lt;/p&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;With these rules, I could now decode the full data payload. For example, applying these rules to one of the captured packets for the “top part” function gave me the 16-bit binary message:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&quot;language-binary&quot;&gt;1110 0101 0001 1010
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;By doing this for all the captured modes, a clear pattern emerged.&lt;/p&gt;
+
+&lt;h4 id=&quot;the-final-command-format&quot;&gt;The Final Command Format&lt;/h4&gt;
+
+&lt;p&gt;The command is a 16-bit (2-byte) packet with a clear and simple structure.&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;[ Address Nibble (4 bits) | Command Nibble (4 bits) | Checksum (8 bits) ]
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;
+    &lt;p&gt;&lt;strong&gt;Address Nibble:&lt;/strong&gt; A 4-bit chunk that acts as a group identifier. For example, all commands for the “top part” used the address &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;1110 (Hex: 0xE)&lt;/code&gt;. This tells the receiver which function to modify.&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;&lt;strong&gt;Command Nibble:&lt;/strong&gt; The next 4-bit chunk is the actual instruction. For the “top part,” this value changed for each of the four rhythm modes, telling the receiver which specific pattern to activate.&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;&lt;strong&gt;Checksum:&lt;/strong&gt; The final 8 bits are a simple checksum. It’s a bitwise NOT of the first 8 bits (the address and command combined). Every 1 is flipped to a 0, and every 0 is flipped to a 1. This is a computationally cheap way for the receiver to verify that it received the message without errors.&lt;/p&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Here is a breakdown of the example command we decoded (&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;1110010100011010&lt;/code&gt;):&lt;/p&gt;
+
+&lt;table&gt;
+  &lt;thead&gt;
+    &lt;tr&gt;
+      &lt;th&gt;Part&lt;/th&gt;
+      &lt;th&gt;Binary&lt;/th&gt;
+      &lt;th&gt;Hex&lt;/th&gt;
+      &lt;th&gt;Meaning&lt;/th&gt;
+    &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+    &lt;tr&gt;
+      &lt;td&gt;Address Nibble&lt;/td&gt;
+      &lt;td&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;1110&lt;/code&gt;&lt;/td&gt;
+      &lt;td&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;0xE&lt;/code&gt;&lt;/td&gt;
+      &lt;td&gt;Address for the “top part” function&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td&gt;Command Nibble&lt;/td&gt;
+      &lt;td&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;0101&lt;/code&gt;&lt;/td&gt;
+      &lt;td&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;0x5&lt;/code&gt;&lt;/td&gt;
+      &lt;td&gt;Instruction for a specific rhythm mode&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td&gt;Full Byte 1&lt;/td&gt;
+      &lt;td&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;11100101&lt;/code&gt;&lt;/td&gt;
+      &lt;td&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;0xE5&lt;/code&gt; The complete command byte&lt;/td&gt;
+      &lt;td&gt; &lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td&gt;Checksum&lt;/td&gt;
+      &lt;td&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;00011010&lt;/code&gt;&lt;/td&gt;
+      &lt;td&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;0x1A&lt;/code&gt; The bitwise NOT of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;0xE5&lt;/code&gt;, used to verify the message&lt;/td&gt;
+      &lt;td&gt; &lt;/td&gt;
+    &lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;
+
+&lt;h4 id=&quot;timing-is-everything&quot;&gt;Timing is Everything!&lt;/h4&gt;
+
+&lt;p&gt;Knowing the sequence of ones and zeros is only half the job. To build a perfect clone, I had to replicate the signal’s timing with microsecond precision. &lt;strong&gt;A radio receiver is incredibly picky; if your pulses are too long or too short, it will reject the command as noise.&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;While a logic analyzer is the ideal tool for getting perfect, noise-free timing measurements directly from the hardware, it’s possible to get a very good estimate from a clean radio capture in URH. By zooming in on the demodulated signal, you can measure the number of “samples” for each pulse and pause. By establishing a base time unit (e.g., one sample equals ~4µs at a sample rate of 250k), you can calculate the approximate duration of each part of the signal.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/img/reversing-a-remote-controller8.png&quot; alt=&quot;Timing&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;This method requires some trial and error. I started with the calculated estimates and then “hand-tuned” the microsecond values in my code, testing each time until the device responded reliably.&lt;/p&gt;
+
+&lt;h3 id=&quot;creating-a-custom-remote-controller&quot;&gt;Creating a Custom Remote Controller&lt;/h3&gt;
+
+&lt;p&gt;With the protocol fully reverse-engineered, the next step was to build the hardware. The goal was to create a new remote from scratch that could replicate the toy’s signals.&lt;/p&gt;
+
+&lt;p&gt;For the main controller, I chose a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;NodeMCU ESP8266&lt;/code&gt; board. It’s inexpensiveyet powerful (and also has a built-in WiFi module), which is great for this kind of hardware project. For the transmitter, I used a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;standard 433 MHz ASK module&lt;/code&gt;, the same type found in the original remote.&lt;/p&gt;
+
+&lt;p&gt;Finally, a crucial component was a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;decoupling capacitor&lt;/code&gt;. During early tests, I discovered the transmitter’s power draw was causing signal instability. Adding a capacitor directly across the transmitter’s power pins provides the instant current needed for clean, strong pulses.&lt;/p&gt;
+
+&lt;p&gt;I soldered all components onto a piece of perfboard to create a compact and sturdy device. The NodeMCU is the main board, with the transmitter and its supporting capacitor placed nearby.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/img/reversing-a-remote-controller2.png&quot; alt=&quot;The custom remote controller&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;The final step was to translate our findings into C++ code for the NodeMCU. This involved creating functions to precisely replicate the signal’s unique structure.&lt;/p&gt;
+
+&lt;h4 id=&quot;the-building-blocks-timing-is-key&quot;&gt;The Building Blocks: Timing is Key&lt;/h4&gt;
+
+&lt;p&gt;The foundation of the code is built on generating pulses with microsecond accuracy. The &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;delayMicroseconds()&lt;/code&gt; function is perfect for this, but to ensure perfect stability and prevent timing jitter from the microcontroller’s background tasks, each pulse is sent inside a “critical section” by temporarily disabling interrupts.&lt;/p&gt;
+
+&lt;p&gt;The core of the signal is the PWM “alphabet” we discovered, which defines a logical 1 and a 0. The timings were hardcoded directly from our analysis:&lt;/p&gt;
+
+&lt;div class=&quot;language-c++ highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;// Timings in microseconds&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;const&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;PULSE_SHORT_US&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;250&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;const&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;PULSE_LONG_US&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;520&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;const&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;PAUSE_SHORT_US&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;40&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;const&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;PAUSE_LONG_US&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;680&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+
+&lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;send_logical_1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+  &lt;span class=&quot;c1&quot;&gt;// A long HIGH pulse followed by a short LOW pause&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;send_high_pulse_critical&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;PULSE_LONG_US&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;delayMicroseconds&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;PAUSE_SHORT_US&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;send_logical_0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+  &lt;span class=&quot;c1&quot;&gt;// A short HIGH pulse followed by a long LOW pause&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;send_high_pulse_critical&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;PULSE_SHORT_US&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;delayMicroseconds&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;PAUSE_LONG_US&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h4 id=&quot;assembling-the-full-command&quot;&gt;Assembling the Full Command&lt;/h4&gt;
+
+&lt;p&gt;With the functions for sending a 1 and a 0 defined, the full command structure could be built. Each transmission starts with a unique preamble, which acts as a “wake-up” call for the receiver.&lt;/p&gt;
+
+&lt;div class=&quot;language-c++ highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;// Preamble timings in microseconds&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;const&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;PREAMBLE_PULSE_1_US&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;70&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;const&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;PREAMBLE_PAUSE_US&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;160&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;const&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;PREAMBLE_PULSE_2_US&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1860&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+
+&lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;send_preamble&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;send_high_pulse_critical&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;PREAMBLE_PULSE_1_US&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;delayMicroseconds&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;PREAMBLE_PAUSE_US&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;send_high_pulse_critical&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;PREAMBLE_PULSE_2_US&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Finally, the main function assembles the full 16-bit packet. It takes the 4-bit address and the 4-bit command, combines them into a single byte, and calculates the checksum by performing a bitwise NOT. It then sends the full sequence: the preamble, four full repetitions of the data packet with its trailer, and a final trimmed packet.&lt;/p&gt;
+
+&lt;div class=&quot;language-c++ highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;send_command&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+  &lt;span class=&quot;c1&quot;&gt;// Hardcoded for one of the &quot;top part&quot; rhythm modes&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;byte&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;address_nibble&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mb&quot;&gt;0b1110&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// Address for the &quot;top part&quot;&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;byte&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;command_nibble&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mb&quot;&gt;0b0110&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// Command for a specific mode&lt;/span&gt;
+
+  &lt;span class=&quot;c1&quot;&gt;// Construct the full 8-bit command&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;byte&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;byte1&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;address_nibble&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&amp;lt;&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;4&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;|&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;command_nibble&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+  &lt;span class=&quot;c1&quot;&gt;// Calculate the checksum&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;byte&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;checksum&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;~&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;byte1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+
+  &lt;span class=&quot;c1&quot;&gt;// Send the preamble once&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;send_preamble&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;delayMicroseconds&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;PAUSE_INTER_PACKET_US&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+
+  &lt;span class=&quot;c1&quot;&gt;// Send the command + checksum + trailer 4 times&lt;/span&gt;
+  &lt;span class=&quot;k&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;i&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;i&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;REPETITIONS&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;i&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;++&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;send_byte&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;byte1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;send_byte&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;checksum&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;send_trailer&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;delayMicroseconds&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;PAUSE_INTER_PACKET_US&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+  &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+  &lt;span class=&quot;c1&quot;&gt;// Send the final trimmed packet (command + checksum only)&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;send_byte&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;byte1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;send_byte&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;checksum&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;After uploading the code and powering it on, it worked flawlessly. The custom-built remote could control the toy’s functions just like the original, now functioning as a platform for future expansion.&lt;/p&gt;
+
+&lt;p&gt;I did the same thing for the other 2 buttons as well and created a fully functional replica.&lt;/p&gt;
+
+&lt;h3 id=&quot;conclusion&quot;&gt;Conclusion&lt;/h3&gt;
+
+&lt;p&gt;This project was more than just building a new remote; it was a deep dive into the practical side of reverse-engineering. I started with a simple problem and a basic tool—an SDR—and worked step-by-step to a complete solution. By looking closely at the signals, I uncovered the device’s secrets: a static protocol, ASK modulation, and a simple PWM encoding scheme. From there, I was able to build the same logic into a new device.&lt;/p&gt;
+
+&lt;p&gt;The main takeaway is that even with simple tools, you can figure out how complex systems work. The static code made the project much easier to tackle, and the bit-flipping checksum was a great example of a simple but effective way to check for errors. This hands-on process strengthened my understanding of radio communication and embedded systems, giving me a solid base for more complex projects in the future. Especially with radio communications!&lt;/p&gt;
+
+&lt;h3 id=&quot;references&quot;&gt;References&lt;/h3&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;a href=&quot;https://en.wikipedia.org/wiki/Amplitude-shift_keying&quot;&gt;Amplitude-shift keying&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://en.wikipedia.org/wiki/Pulse-width_modulation&quot;&gt;Pulse-width modulation&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://en.wikipedia.org/wiki/Signal_modulation&quot;&gt;Signal modulation&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;tools&quot;&gt;Tools&lt;/h3&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;a href=&quot;https://github.com/jopohl/urh&quot;&gt;Universal Radio Hacker&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://github.com/merbanan/rtl_433&quot;&gt;rtl_433&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+</description>
+        <pubDate>Sat, 16 Aug 2025 03:30:00 +0330</pubDate>
+        <link>https://lopqto.me/posts/reversing-a-remote-controller</link>
+        <guid isPermaLink="true">https://lopqto.me/posts/reversing-a-remote-controller</guid>
+        
+        
+        <category>reverse-engineering</category>
+        
+        <category>hardware</category>
+        
+        <category>radio</category>
+        
+      </item>
     
       <item>
         <title>From Laziness to Control: Reversing an IoT device using Frida</title>
