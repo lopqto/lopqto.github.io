@@ -1,7 +1,7 @@
 # Site settings
 title: lopqto's adventures
 url: "https://lopqto.me"
-baseurl: "" 
+baseurl: ""
 timezone: Asia/Tehran
 description: >
   Personal blog of Hamidreza Babaee. Reverse engineering, malware analysis, and vulnerability researching.
@@ -9,10 +9,8 @@ description: >
 # Personal information
 email: morpix@protonmail.com
 author: Hamidreza Babaee
-avatar: "https://en.gravatar.com/userimage/156357779/a780a38ea0048d30d1aa273a4057f927.jpg?size=135"
-profile: deep dive into binaries.
-#twitter_username: twitter_username
-#github_username:  lopqto
+avatar: "https://gravatar.com/avatar/2299d4e1a3508f63aaac7d956f41784372595562de6274dc0157c107ae2c4d07?v=1755405717000&size=256"
+profile: Poking around to find out.
 profile_links:
   Email: "mailto:morpix@pm.me"
   GitHub: "https://github.com/lopqto"
@@ -21,15 +19,15 @@ profile_links:
 excerpt_separator: <!--more-->
 
 header:
-  links:             # Links on the header. Link to in-site page with a slash as prefix
+  links: # Links on the header. Link to in-site page with a slash as prefix
     About: /about/
     Category: /category/
 
 permalink: /archivers/:title
 plugins:
- - jekyll-paginate
- - jekyll-gist
- - jemoji
+  - jekyll-paginate
+  - jekyll-gist
+  - jemoji
 
 # Build settings
 paginate: 5
@@ -40,8 +38,7 @@ markdown: kramdown
 
 # https://jekyllrb.com/docs/configuration/#precedence
 defaults:
-  -
-    scope:
+  - scope:
       path: ""
       type: "posts"
     values:
