@@ -10,7 +10,7 @@ Feeling bored, I decided to take on a personal challenge: reverse-engineer a toy
 
 ### Exploring the Target Device
 
-I had an adult toy with a remote controller laying around. The remote controller has 3 buttons for 3 different functions: power, change the rhythm of the bottom part, change the rhythm of the top part. I was suspecting that the remote controller uses radio waves to communicate with the toy like other similar remote controllers.
+I had a toy with a remote controller laying around. The remote controller has 3 buttons for 3 different functions: power, change the rhythm of the bottom part, change the rhythm of the top part. I was suspecting that the remote controller uses radio waves to communicate with the toy like other similar remote controllers.
 
 After opening the remote controller, My suspicion was confirmed.
 
