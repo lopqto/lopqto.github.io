@@ -6,8 +6,8 @@
 </description>
     <link>https://lopqto.me/</link>
     <atom:link href="https://lopqto.me/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Mon, 18 Aug 2025 08:49:28 +0330</pubDate>
-    <lastBuildDate>Mon, 18 Aug 2025 08:49:28 +0330</lastBuildDate>
+    <pubDate>Mon, 18 Aug 2025 09:17:34 +0330</pubDate>
+    <lastBuildDate>Mon, 18 Aug 2025 09:17:34 +0330</lastBuildDate>
     <generator>Jekyll v3.9.3</generator>
     
       <item>
@@ -134,6 +134,8 @@
 &lt;p&gt;&lt;img src=&quot;/img/reversing-a-remote-controller3.png&quot; alt=&quot;bits&quot; /&gt;&lt;/p&gt;
 
 &lt;p&gt;That was the confirmation I needed. &lt;strong&gt;The device uses a static code, which means it’s completely vulnerable to a replay attack.&lt;/strong&gt; Game on.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;A Quick Note on Security:&lt;/strong&gt; It’s worth pointing out that finding a “vulnerability” like this in a simple toy isn’t an indictment of the manufacturer. Implementing secure rolling codes (cryptography) adds complexity and cost. For low-cost consumer electronics, manufacturers make a deliberate trade-off, opting for simple, static codes that are cheap and reliable over robust security. This is expected and perfectly normal for this class of device.&lt;/p&gt;
 
 &lt;h3 id=&quot;demodulating-the-signal&quot;&gt;Demodulating the Signal&lt;/h3&gt;
 
@@ -285,7 +287,11 @@
 
 &lt;p&gt;Knowing the sequence of ones and zeros is only half the job. To build a perfect clone, I had to replicate the signal’s timing with microsecond precision. &lt;strong&gt;A radio receiver is incredibly picky; if your pulses are too long or too short, it will reject the command as noise.&lt;/strong&gt;&lt;/p&gt;
 
-&lt;p&gt;While a logic analyzer is the ideal tool for getting perfect, noise-free timing measurements directly from the hardware, it’s possible to get a very good estimate from a clean radio capture in URH. By zooming in on the demodulated signal, you can measure the number of “samples” for each pulse and pause. By establishing a base time unit (e.g., one sample equals ~4µs at a sample rate of 250k), you can calculate the approximate duration of each part of the signal.&lt;/p&gt;
+&lt;p&gt;While a logic analyzer is the ideal tool for getting perfect, noise-free timing measurements directly from the hardware, it’s possible to get a very good estimate from a clean radio capture in URH. By zooming in on the demodulated signal, you can measure the number of “samples” for each pulse and pause. By establishing a base time unit (e.g., one sample equals ~5µs at a sample rate of 200k), you can calculate the approximate duration of each part of the signal.&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;Time per sample = 1 / Sample Rate
+1 / 200,000 = 0.000005s or 5µs
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 
 &lt;p&gt;&lt;img src=&quot;/img/reversing-a-remote-controller8.png&quot; alt=&quot;Timing&quot; /&gt;&lt;/p&gt;
 

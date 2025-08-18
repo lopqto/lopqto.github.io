@@ -99,6 +99,8 @@ As you can see, in the following image, searching for the single pattern resulte
 
 That was the confirmation I needed. **The device uses a static code, which means it's completely vulnerable to a replay attack.** Game on.
 
+**A Quick Note on Security:** It's worth pointing out that finding a "vulnerability" like this in a simple toy isn't an indictment of the manufacturer. Implementing secure rolling codes (cryptography) adds complexity and cost. For low-cost consumer electronics, manufacturers make a deliberate trade-off, opting for simple, static codes that are cheap and reliable over robust security. This is expected and perfectly normal for this class of device.
+
 ### Demodulating the Signal
 
 In simple terms, modulation is the process of encoding digital data (our ones and zeros) onto a radio wave, and demodulation is getting that data back off the wave at the other end.
@@ -204,7 +206,12 @@ Here is a breakdown of the example command we decoded (`1110010100011010`):
 
 Knowing the sequence of ones and zeros is only half the job. To build a perfect clone, I had to replicate the signal's timing with microsecond precision. **A radio receiver is incredibly picky; if your pulses are too long or too short, it will reject the command as noise.**
 
-While a logic analyzer is the ideal tool for getting perfect, noise-free timing measurements directly from the hardware, it's possible to get a very good estimate from a clean radio capture in URH. By zooming in on the demodulated signal, you can measure the number of "samples" for each pulse and pause. By establishing a base time unit (e.g., one sample equals ~4µs at a sample rate of 250k), you can calculate the approximate duration of each part of the signal.
+While a logic analyzer is the ideal tool for getting perfect, noise-free timing measurements directly from the hardware, it's possible to get a very good estimate from a clean radio capture in URH. By zooming in on the demodulated signal, you can measure the number of "samples" for each pulse and pause. By establishing a base time unit (e.g., one sample equals ~5µs at a sample rate of 200k), you can calculate the approximate duration of each part of the signal.
+
+```
+Time per sample = 1 / Sample Rate
+1 / 200,000 = 0.000005s or 5µs
+```
 
 ![Timing](/img/reversing-a-remote-controller8.png)
 
