@@ -6,9 +6,98 @@
 </description>
     <link>https://lopqto.me/</link>
     <atom:link href="https://lopqto.me/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Mon, 18 Aug 2025 09:17:34 +0330</pubDate>
-    <lastBuildDate>Mon, 18 Aug 2025 09:17:34 +0330</lastBuildDate>
+    <pubDate>Mon, 22 Sep 2025 22:53:42 +0330</pubDate>
+    <lastBuildDate>Mon, 22 Sep 2025 22:53:42 +0330</lastBuildDate>
     <generator>Jekyll v3.9.3</generator>
+    
+      <item>
+        <title>Via Negativa: On Reducing Entropy in Systems</title>
+        <description>&lt;p&gt;On the way home after a short vacation, the peace of a bus ride sparked a reflection. Opening my notebook, one thought stood out: stability, both in my role as a DevSecOps engineer and in personal life, had come simply by subtraction rather than addition.&lt;/p&gt;
+
+&lt;h3 id=&quot;what-is-via-negativa&quot;&gt;What is &lt;em&gt;Via Negativa&lt;/em&gt;?&lt;/h3&gt;
+
+&lt;p&gt;&lt;em&gt;Via Negativa&lt;/em&gt;, “the negative way”, is a philosophical and theological idea. Leaving theology aside, I like the philosophy behind it: a way of thinking that removes what is false or unnecessary.&lt;/p&gt;
+
+&lt;p&gt;As Taleb put it:&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;Progress is often made by removing harmful things, not adding more.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Whether we call it &lt;em&gt;Via Negativa&lt;/em&gt;, minimalism, essentialism, or the Pareto principle (80/20), the message is the same: &lt;strong&gt;remove the unnecessary, and what remains is what truly matters.&lt;/strong&gt;&lt;/p&gt;
+
+&lt;h3 id=&quot;subtraction-vs-addition&quot;&gt;Subtraction vs. Addition&lt;/h3&gt;
+
+&lt;p&gt;Addition is seductive. It is measurable, tangible, visible.&lt;/p&gt;
+
+&lt;p&gt;Add another CI/CD pipeline. One more security scanner. Another policy, rule, habit-tracking app, supplement, or note-taking tool.&lt;/p&gt;
+
+&lt;p&gt;The world rewards addition:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Stack more.&lt;/li&gt;
+  &lt;li&gt;Optimize more.&lt;/li&gt;
+  &lt;li&gt;Buy more.&lt;/li&gt;
+  &lt;li&gt;Squeeze every last drop of time and energy to do more.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Addition feels productive because the results are visible.&lt;/p&gt;
+
+&lt;p&gt;Subtraction, on the other hand, feels empty. You remove something, and it looks like loss. It feels like doing less, being less. It goes against what the world advertises.&lt;/p&gt;
+
+&lt;p&gt;But subtraction has one thing addition lacks: &lt;strong&gt;it reduces entropy&lt;/strong&gt;.&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Less moving parts.&lt;/li&gt;
+  &lt;li&gt;Less bugs.&lt;/li&gt;
+  &lt;li&gt;Less crashes.&lt;/li&gt;
+  &lt;li&gt;Less alerts.&lt;/li&gt;
+  &lt;li&gt;Less noise.&lt;/li&gt;
+  &lt;li&gt;Less distraction.&lt;/li&gt;
+  &lt;li&gt;Less wasted energy.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;And with that reduction comes stability.&lt;/p&gt;
+
+&lt;h3 id=&quot;subtracting-as-an-engineer&quot;&gt;Subtracting as an Engineer&lt;/h3&gt;
+
+&lt;p&gt;In the world of technology, the desire to add surrounds us. I have seen it, and I have done it. We get a new security tool, and it feels like progress. We add a new dashboard with dozens of graphs, and we feel more in control. For a while, this works. We are catching more things, we have more “visibility.” It feels like a win for the whole team.&lt;/p&gt;
+
+&lt;p&gt;Then the noise begins. The new tool sends a message for every little thing that occurs. The dashboard is so cluttered that nobody ever looks at it anymore. The CI/CD pipeline is now a muddle of scripts that only one person fully comprehends. The important signals are drowned out by the constant noise.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;The bravest engineering decision is often not to add a new feature, but to delete a redundant one.&lt;/strong&gt; It’s the courage to say, “We don’t need this alert,” or “Let’s simplify this pipeline.” When we eliminate the noise, we can now listen to the signal. The result is a less noisy, more focused team that can respond to &lt;em&gt;actual&lt;/em&gt; problems faster. We design systems that are not only robust but also simple to understand. Simplicity provides us strength.&lt;/p&gt;
+
+&lt;h3 id=&quot;enjoying-the-sunset&quot;&gt;Enjoying the Sunset&lt;/h3&gt;
+
+&lt;p&gt;This philosophy of subtraction is not just limited to our systems at work; it’s extended to our lives.&lt;/p&gt;
+
+&lt;p&gt;It starts by removing the unneeded, the applications that don’t assist you, the alerts that get in the way of the here and now. The quiet at first feels awkward. The absence of the continuous hum of input is frightening. Our brains, trained for distraction, don’t know what to do with quiet.&lt;/p&gt;
+
+&lt;p&gt;But soon that emptiness manifests as empty space. Time itself becomes open. A gap of five minutes is no longer just time to glance at a phone, but time to complete a whole page in a notebook. A simple meal, untouching of a screen, is a whole experience.&lt;/p&gt;
+
+&lt;p&gt;The purpose of this idea, this subtraction exercise, is not to be an machine of maximum efficiency. It’s the opposite. It is to be a space quiet enough to finally hear your own mind. To be the author of your own day, not a reactor to the demands of a thousand notices. &lt;strong&gt;It is to understand that by removing the things that consumed your time, you finally have time to live.&lt;/strong&gt;.&lt;/p&gt;
+
+&lt;p&gt;I experienced it myself, resting on a bench as the sun set, music in the background, a tree’s shadow dancing on the wall, nothing urgent, just the quiet fullness of the moment.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Life is simple. Living is even simpler.&lt;/strong&gt; The hard part was trusting that &lt;em&gt;less could be enough&lt;/em&gt;.&lt;/p&gt;
+
+&lt;h3 id=&quot;closing-toughts&quot;&gt;Closing Toughts&lt;/h3&gt;
+
+&lt;p&gt;Subtraction isn’t glamorous. It doesn’t win you quick applause. It seems to be like doing less, being less.&lt;/p&gt;
+
+&lt;p&gt;But it is subtraction that reduces entropy, in systems, and in life.
+And clarity appears expensive when entropy is low.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;And occasionally the most heroic act of design, as an engineer or in life, is not what we add, but what we have the courage to subtract.&lt;/strong&gt;&lt;/p&gt;
+</description>
+        <pubDate>Mon, 22 Sep 2025 00:30:00 +0330</pubDate>
+        <link>https://lopqto.me/posts/via-negativa</link>
+        <guid isPermaLink="true">https://lopqto.me/posts/via-negativa</guid>
+        
+        
+        <category>philosophy</category>
+        
+      </item>
     
       <item>
         <title>Reversing a Remote Controller: A Case Study in RF Engineering</title>
