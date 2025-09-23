@@ -15,6 +15,12 @@
   </p>
 </div>
 
+{% if page.layout == "post" %}
+<div class="col-box post-toc hide">
+  <div class="col-box-title">TOC</div>
+  <div class="toc-body"></div>
+</div>
+{% elsif page.url == "/" %}
 <div class="col-box">
   <div class="col-box-title">Newest Posts</div>
   <ul class="post-list">
@@ -23,7 +29,4 @@
     {% endfor %}
   </ul>
 </div>
-
-<div class="col-box post-toc hide">
-  <div class="col-box-title">TOC</div>
-</div>
+{% endif %}
