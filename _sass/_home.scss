@@ -8,6 +8,22 @@
 		font-size: 34px;
     }
 }
+.category-heading {
+    margin: 40px 40px 10px;
+    font-size: 1.125rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #000;
+
+    &:first-of-type {
+        margin-top: 20px;
+    }
+
+    @include media-query($on-palm) {
+        margin: 25px 10px 8px;
+    }
+}
 .rss-link {
 	float:right;
     text-decoration: none;
@@ -74,6 +90,25 @@
     @include media-query($on-palm) {
 		padding: 10px;
     }
+}
+.category-posts {
+    list-style: none;
+    margin: 0 40px 45px;
+    padding: 0;
+
+    li {
+        margin-bottom: 12px;
+    }
+
+    @include media-query($on-palm) {
+        margin: 0 10px 35px;
+    }
+}
+
+.category-post-date {
+    font-size: $small-font-size * 0.9;
+    color: #9aa0a6;
+    margin-right: 10px;
 }
 .pagination {
 	text-align:center;

@@ -1,5 +1,6 @@
 @charset "UTF-8";
-body { margin: 0; font-family: "Open Sans", "Helvetica Neue", "DejaVu Sans", Arial, "PingFang SC", "Noto Sans CJK SC", "Hiragino Sans GB", "微软雅黑", Helvetica, sans-serif; font-size: 16px; line-height: 1.5; }
+@import url("https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@400;600;700&display=swap");
+body { margin: 0; font-family: "Source Sans Pro", "IBM Plex Sans", "Open Sans", "Helvetica Neue", "DejaVu Sans", Arial, "PingFang SC", "Noto Sans CJK SC", "Hiragino Sans GB", "微软雅黑", Helvetica, sans-serif; font-size: 16px; line-height: 1.5; }
 
 a { text-decoration: none; color: #036; }
 
@@ -103,6 +104,9 @@ body { background-color: #e0e0e3; }
 
 .home .page-heading { font-size: 40px; font-weight: normal; margin: 20px; }
 @media screen and (max-width: 600px) { .home .page-heading { margin: 10px; font-size: 34px; } }
+.home .category-heading { margin: 40px 40px 10px; font-size: 1.125rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #000; }
+.home .category-heading:first-of-type { margin-top: 20px; }
+@media screen and (max-width: 600px) { .home .category-heading { margin: 25px 10px 8px; } }
 .home .rss-link { float: right; text-decoration: none; border: 1px solid; color: #999; background: #fff; font-size: 11.2px; padding: 1px 8px; }
 .home .rss-link:hover, .home .rss-link:focus { color: #666; }
 .home .post-list { margin: 0; padding: 20px 40px; list-style: none; }
@@ -117,6 +121,10 @@ body { background-color: #e0e0e3; }
 .home .post-list .post-excerpt img { display: block; margin: 1em auto; max-height: 16em; opacity: .7; transition: opacity .3s; }
 .home .post-list .post-excerpt img:hover { opacity: 1; }
 @media screen and (max-width: 600px) { .home .post-list { padding: 10px; } }
+.home .category-posts { list-style: none; margin: 0 40px 45px; padding: 0; }
+.home .category-posts li { margin-bottom: 12px; }
+@media screen and (max-width: 600px) { .home .category-posts { margin: 0 10px 35px; } }
+.home .category-post-date { font-size: 12.6px; color: #9aa0a6; margin-right: 10px; }
 .home .pagination { text-align: center; text-decoration: none; color: #666; margin: 30px 0; }
 .home .pagination .page_number { margin: 0 30px; }
 .home .pagination .previous, .home .pagination .next { padding: 10px 20px; white-space: nowrap; }
