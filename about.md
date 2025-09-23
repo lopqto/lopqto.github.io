@@ -4,6 +4,6 @@ title: About
 permalink: /about/
 ---
 
-### Who am I? 
+### Me
 
-I am an IIoT security engineer with a passion for hardware tinkering, specializing in the realm of malware analysis and reverse engineering.
+Fascinated by the "why" of things.
