@@ -5,6 +5,7 @@ baseurl: ""
 timezone: Asia/Tehran
 description: >
   Personal blog of Hamidreza Babaee. Reverse engineering, malware analysis, and vulnerability researching.
+lang: en
 
 # Personal information
 email: morpix@protonmail.com
