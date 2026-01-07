@@ -8,12 +8,10 @@ description: >
 lang: en
 
 # Personal information
-email: morpix@protonmail.com
 author: Hamidreza Babaee
 avatar: "https://gravatar.com/avatar/2299d4e1a3508f63aaac7d956f41784372595562de6274dc0157c107ae2c4d07?v=1755405717000&size=256"
 profile: Poking around to find out.
 profile_links:
-  Email: "mailto:morpix@pm.me"
   GitHub: "https://github.com/lopqto"
   Twitter: "https://twitter.com/lopqto"
 
