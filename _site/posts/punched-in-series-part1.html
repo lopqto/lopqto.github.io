@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>Punched In: Extracting Firmware from an ESP8266 RFID Terminal « lopqto's adventures</title>
+  <meta name="description" content="I was looking to buy a time tracker device for the office. In my searching process I found a very cheap device that immediately triggered my curiosity. As yo...">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@400;600;700&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@400;600;700&display=swap" media="print" onload="this.media='all'">
+  <noscript>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@400;600;700&display=swap">
+  </noscript>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="canonical" href="https://lopqto.me/posts/punched-in-series-part1">
+  <link rel="shortcut icon" type="image/png" href="/favicon.png">
+  <link rel="alternate" type="application/rss+xml" title="lopqto's adventures" href="https://lopqto.me/feed.xml" />
+</head>
+
+
+  <body>
+
+    <div class="header-placeholder"></div>
+<header class="header">
+  <div class="wrapper">
+    <div id="sidebar-toggle">TOC</div>
+    <a class="site-title" href="/">lopqto's adventures</a>
+    <nav class="site-nav">
+      
+        
+        <a class="page-link" href="/about/">About</a>
+      
+        
+        <a class="page-link" href="/category/">Category</a>
+      
+    </nav>
+  </div>
+</header>
+
+
+    <div class="page-content">
+      <div class="wrapper">
+        <div class="col-main">
+          <div class="post">
+
+  <header class="post-header">
+    <h1 class="post-title">Punched In: Extracting Firmware from an ESP8266 RFID Terminal</h1>
+    <p class="post-meta">Feb 12, 2026</p>
+  </header>
+
+  <article class="post-content">
+    <p>I was looking to buy a time tracker device for the office. In my searching process I found a very cheap device that immediately triggered my curiosity. As you may already know by reading my older posts, I love dissecting this kind of hardware (unknown &amp; random manufacturer), so I decided to purchase one just to reverse it.</p>
+
+<h3 id="the-device">The Device</h3>
+
+<p>This device is a time tracking device. After you turn it on for the first time, it starts a wireless access point. You can connect to it and open the control panel to configure your office’s WiFi credentials. After the reboot it will act as a WiFi client and connect to the AP.</p>
+
+<p>Each user has a unique RFID card, and they will scan it using the terminal. The terminal will send the RFID tag number plus the timestamp to a remote API.</p>
+
+<h3 id="hardware-parts">Hardware Parts</h3>
+
+<p>After I configured the WiFi credentials and restarted the device, I headed to the DHCP page of my router to find the IP address of the device so I can open the control panel. In that list of entries, I found something very interesting:</p>
+
+<p><img src="/img/punched-in-series-part1-1.jpg" alt="DHCP page enteries" /></p>
+
+<p>That was the AHA moment!</p>
+
+<p>As per <a href="https://en.wikipedia.org/wiki/ESP8266">Wikipedia’s description</a>:</p>
+
+<blockquote>
+  <p>The ESP8266 is a low-cost Wi-Fi microchip, with built-in TCP/IP networking software, and microcontroller capability, produced by Espressif Systems</p>
+</blockquote>
+
+<p>It makes sense. To keep the hardware cost very low, they used a very cheap microcontroller with WiFi connectivity and to compensate for that, they delegated all the main functionalities like leave tracker, timesheet, etc. to a remote API.</p>
+
+<p>I decided to open the device and take a look at it:</p>
+
+<p><img src="/img/punched-in-series-part1-2.jpg" alt="The inside" /></p>
+
+<p>To be honest, I felt down a bit. The hardware is far from an intricate device and more like a hobby project.</p>
+
+<p>Let’s review:</p>
+
+<ol>
+  <li><strong>Microcontroller</strong>: Wemos D1 Mini -&gt; an ESP8266-based development board.</li>
+  <li><strong>Display</strong>: 1602 LCD with I2C Backpack</li>
+  <li><strong>RFID Reader</strong>: RC522 (MFRC522) - <a href="https://www.nxp.com/docs/en/data-sheet/MFRC522.pdf">datasheet</a></li>
+  <li><strong>Base Board</strong>: Custom “Shield” / Carrier PCB -&gt; Acts as a “motherboard” to fix the messy jumper wires issue. It breaks out the pins from Wemos D1 Mini to the specific headers for the RFID and LCD.</li>
+  <li><strong>LED Indicators</strong></li>
+</ol>
+
+<p>I decided to focus on the firmware instead of hardware and go as deep as possible.</p>
+
+<h3 id="getting-the-firmware">Getting the Firmware</h3>
+
+<p>We can easily see the mini USB port that’s connected to an AC socket to act as the power source.</p>
+
+<p><img src="/img/punched-in-series-part1-3.jpg" alt="mini USB port" /></p>
+
+<p>We can connect the Wemos to our PC using a simple mini USB cable, and the dumping part would be a piece of cake for these reasons:</p>
+
+<ul>
+  <li><strong>Hardware Disabling:</strong> You cannot disable the port via software. You must physically destroy the UART traces (TX/RX lines) or remove the USB-to-Serial IC (e.g., <code class="language-plaintext highlighter-rouge">CH340</code>) after flashing.</li>
+  <li><strong>Flash Encryption:</strong> The ESP8266 does not support hardware flash encryption. If someone has physical access, they can bypass the USB port and wire directly to the SPI flash chip pins to dump data.</li>
+  <li><strong>eFuse Limitations:</strong> Unlike the ESP32, the ESP8266 lacks the <code class="language-plaintext highlighter-rouge">flash_crypt_cnt</code> or <code class="language-plaintext highlighter-rouge">JTAG_DISABLE</code>  eFuses.</li>
+  <li><strong>Physical Protection:</strong> The only real protection is potting the board in epoxy to prevent physical probing of the flash memory chip. Which in this case, they didn’t!</li>
+</ul>
+
+<p>To verify my guess, I connected the microcontroller to my PC and checked the <code class="language-plaintext highlighter-rouge">flash-id</code></p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>esptool <span class="nt">--port</span> /dev/cu.usbserial-A5069RR4 flash-id
+</code></pre></div></div>
+
+<p><img src="/img/punched-in-series-part1-4.jpg" alt="flash-id details" /></p>
+
+<p>To Dump it:</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>esptool <span class="nt">--port</span> /dev/cu.usbserial-A5069RR4 read-flash 0 0x400000 wemos_firmware_dump.bin
+</code></pre></div></div>
+
+<p>Note: Wemos D1 Mini has exactly 4MB of memory, so we read it all.</p>
+
+<p>And finally to verify the dump:</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>esptool <span class="nt">--chip</span> esp8266 image-info wemos_firmware_dump.bin
+</code></pre></div></div>
+
+<p><img src="/img/punched-in-series-part1-5.jpg" alt="image-info details" /></p>
+
+<p>Cool, we got the entire (probably) unencrypted firmware. Let’s move to the next part!</p>
+
+<h3 id="reading-the-binary">Reading the Binary</h3>
+
+<p>I found <a href="http://cholla.mmto.org/esp8266/xtensa.html">this guide</a> that describes ESP8266’s processor architecture like this:</p>
+
+<blockquote>
+  <p>The ESP8266 has an Xtensa lx106 processor at its core. This is a 32 bit RISC processor with 16 registers.</p>
+</blockquote>
+
+<p>In the previous step we used <code class="language-plaintext highlighter-rouge">esptool</code> to analyze the image info. So obviously, <code class="language-plaintext highlighter-rouge">esptool</code> knows how to parse the image.</p>
+
+<p>I digged a little bit deeper in the esptool source code and found this <a href="https://github.com/espressif/esptool/blob/master/esptool/bin_image.py">bin_image.py</a> file which is responsible to parse the headers.</p>
+
+<p>By looking at the file I found these headers:</p>
+
+<ol>
+  <li><strong>Common Header:</strong></li>
+</ol>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">magic</span><span class="p">,</span> <span class="n">segments</span><span class="p">,</span> <span class="bp">self</span><span class="p">.</span><span class="n">flash_mode</span><span class="p">,</span> <span class="bp">self</span><span class="p">.</span><span class="n">flash_size_freq</span><span class="p">,</span> <span class="bp">self</span><span class="p">.</span><span class="n">entrypoint</span> <span class="o">=</span> <span class="n">struct</span><span class="p">.</span><span class="n">unpack</span><span class="p">(</span><span class="s">"&lt;BBBBI"</span><span class="p">,</span> <span class="n">load_file</span><span class="p">.</span><span class="n">read</span><span class="p">(</span><span class="mi">8</span><span class="p">))</span>
+</code></pre></div></div>
+
+<p>Which is equivalent to:</p>
+
+<div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">struct</span> <span class="n">header</span> <span class="p">{</span>
+    <span class="nb">u8</span>  <span class="n">magic</span><span class="p">;</span>
+    <span class="nb">u8</span>  <span class="n">segments</span><span class="p">;</span> <span class="c">// count</span>
+    <span class="nb">u8</span>  <span class="n">flash_mode</span><span class="p">;</span>
+    <span class="nb">u8</span>  <span class="n">flash_size_freq</span><span class="p">;</span>
+    <span class="nb">u32</span> <span class="n">entrypoint</span><span class="p">;</span>
+<span class="p">};</span>
+</code></pre></div></div>
+
+<ol>
+  <li><strong>Segment Header:</strong></li>
+</ol>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">(</span><span class="n">offset</span><span class="p">,</span> <span class="n">size</span><span class="p">)</span> <span class="o">=</span> <span class="n">struct</span><span class="p">.</span><span class="n">unpack</span><span class="p">(</span><span class="s">"&lt;II"</span><span class="p">,</span> <span class="n">f</span><span class="p">.</span><span class="n">read</span><span class="p">(</span><span class="mi">8</span><span class="p">))</span>
+</code></pre></div></div>
+
+<p>Which is equivalent to:</p>
+
+<div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">struct</span> <span class="n">segment_header</span> <span class="p">{</span>
+    <span class="nb">u32</span> <span class="n">offset</span><span class="p">;</span> <span class="c">// load address</span>
+    <span class="nb">u32</span> <span class="n">size</span><span class="p">;</span>
+<span class="p">};</span>
+</code></pre></div></div>
+
+<p>And for the segments, data comes right after the segment header so we can write it like:</p>
+
+<div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">struct</span> <span class="n">segment_header</span> <span class="p">{</span>
+    <span class="nb">u32</span> <span class="n">offset</span><span class="p">;</span>
+    <span class="nb">u32</span> <span class="n">size</span><span class="p">;</span>
+    <span class="nb">u8</span>  <span class="n">data</span><span class="p">[</span><span class="n">size</span><span class="p">];</span> 
+<span class="p">};</span>
+</code></pre></div></div>
+
+<p>I dug way deeper and wrote a pattern file for the entire image with some helper variables for <a href="https://imhex.werwolv.net/">ImHex</a> and sent a pull request (<a href="https://github.com/WerWolv/ImHex-Patterns/pull/492">PR #492</a>) for it. At this moment the PR is still open.</p>
+
+<ul>
+  <li><a href="https://github.com/lopqto/ImHex-Patterns/blob/esp8266/patterns/esp8266.hexpat">Pattern file</a></li>
+</ul>
+
+<p><img src="/img/punched-in-series-part1-6.jpg" alt="Example firmware in ImHex" /></p>
+
+<p>After verifying everything about the legitimacy of the firmware and writing a pattern file for it, we are ready to load it in Ghidra for further analysis.</p>
+
+<h3 id="into-ghidra">Into Ghidra</h3>
+
+<p>Ghidra already supports Xtensa pretty well (added in version 11.0) and can disassemble and generate pseudocode for these processors easily. The issue resides with the custom proprietary firmware format of ESP8266. Ghidra must know where to look, where to disassemble as code, and where to look for data. For these kinds of situations, Ghidra uses loaders.</p>
+
+<p>Ghidra doesn’t have a native loader that understands ESP8266 firmware. Unlike standard formats like ELF or Mach-O, ESP8266 uses a proprietary binary format with a custom header structure featuring:</p>
+<ul>
+  <li>An 8-byte header with magic byte (<code class="language-plaintext highlighter-rouge">0xe9</code>) for identification</li>
+  <li>Segment-based layout where each section has its own offset and size</li>
+  <li>Multiple headers including a user ROM header at offset <code class="language-plaintext highlighter-rouge">0x1000</code></li>
+  <li>Specific memory mappings for IROM, user code, and data segments</li>
+</ul>
+
+<p>Without a proper loader, Ghidra would need you to manually extract and position each binary segment into the correct memory regions. The loader handles all this automatically by parsing the firmware structure and creating properly mapped memory blocks with correct permissions.</p>
+
+<p>I found an older ESP8266 loader <a href="https://github.com/hank/ghidra-esp8266">here!</a>, but the codebase was outdated and needed updates. So I decided to send a pull request (<a href="https://github.com/hank/ghidra-esp8266/pull/6">PR #6</a>) to contribute the fixes back to the community.</p>
+
+<p>After installing and enabling the custom loader, we can easily import the dumped firmware into Ghidra:</p>
+
+<p><img src="/img/punched-in-series-part1-7.jpg" alt="Ghidra's open file dialog" /></p>
+
+<p>Loader parses the firmware headers like what we did in the previous sections, then creates memory layouts and fixes the permissions:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Address</th>
+      <th>Name</th>
+      <th>Loader Section Name –</th>
+      <th>Size</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>0x3FFE8000</td>
+      <td>dram0</td>
+      <td><code class="language-plaintext highlighter-rouge">.user_data</code></td>
+      <td>14000h</td>
+      <td>User data RAM. Available to applications</td>
+    </tr>
+    <tr>
+      <td>0x40100000</td>
+      <td>iram1</td>
+      <td><code class="language-plaintext highlighter-rouge">.user_code</code></td>
+      <td>8000h</td>
+      <td>Instruction RAM. Used by bootloader</td>
+    </tr>
+    <tr>
+      <td>0x40200000</td>
+      <td>SPI Flash</td>
+      <td><code class="language-plaintext highlighter-rouge">code</code></td>
+      <td>-</td>
+      <td>SPI Flash is mapped here</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>After loading the firmware into Ghidra, we can see that it was able to analyze the firmware. One of the simplest ways to verify this is by looking at the strings. Seeing meaningful strings usually means that the loader did its job and was able to map the data sections to the correct memory addresses.</p>
+
+<p><img src="/img/punched-in-series-part1-8.jpg" alt="String view" /></p>
+
+<p>If we head to the function lists, we can spot the other issue. Ghidra was unable to find function signatures using their signature db and all of the functions are labeled like <code class="language-plaintext highlighter-rouge">FUN_*</code>.</p>
+
+<p><img src="/img/punched-in-series-part1-11.jpg" alt="Function Table" /></p>
+
+<p>To solve this issue we can use a <strong>FidDb</strong>. It’s a database file used by <strong>Ghidra’s Function ID (FID)</strong> analyzer to identify and match functions across different binaries.</p>
+
+<p>Because we are in microcontroller land, usually we are limited in terms of public FidDbs. For that reason, we need to create one ourselves.</p>
+
+<p>To do that, we need to compile another firmware that uses same SDK and libraries with debug symbols on. To build a firmware for an ESP8266, there are two viable options:</p>
+
+<ol>
+  <li><strong>Arduino IDE + ESP8266 SDK</strong></li>
+  <li><strong>PlatformIO + ESP8266 SDK</strong></li>
+</ol>
+
+<p>We can have an educated guess and based on the hardware design, guess that they used Arduino IDE to develop the firmware because it is much easier and user friendly.</p>
+
+<ul>
+  <li>You can read about installing ESP8266 SDK for Arduino IDE <a href="https://randomnerdtutorials.com/how-to-install-esp8266-board-arduino-ide/">here!</a></li>
+</ul>
+
+<p>Generating function signatures heavily depends on the SDK and library version. Even minor version differences can affect function signatures due to compiler optimizations or code changes. While ESP8266 SDKs share core functionality across versions, you shouldn’t assume signature compatibility. To be honest, you cannot expect 100% function signature coverage. FidDb is a helper utility to make the reversing process easier, not an ultimate solution. That’s why I decided not to play the cat-and-mouse game. of hunting down the exact SDK version to match the FidDb perfectly. The reality is that even with a perfectly matched FidDb, there will always be functions that need manual analysis. Since ESP8266 firmware is relatively small and the FidDb provides useful partial matches even across versions, I chose to just use what’s available and move forward with the actual reverse engineering. The time spent hunting for the exact SDK version is better spent on the analysis itself.</p>
+
+<p>I created this simple sketch:</p>
+
+<div class="language-c++ highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">#include &lt;ESP8266WiFi.h&gt;
+#include &lt;ESP8266WebServer.h&gt;
+#include &lt;ESP8266HTTPClient.h&gt;
+#include &lt;ESP8266mDNS.h&gt;
+#include &lt;WiFiClient.h&gt;
+#include &lt;WiFiUdp.h&gt;
+#include &lt;DNSServer.h&gt;
+</span>
+<span class="kt">void</span> <span class="nf">mega_stub</span><span class="p">()</span> <span class="p">{</span>
+
+  <span class="c1">// Never execute</span>
+  <span class="k">if</span> <span class="p">(</span><span class="nb">false</span><span class="p">)</span> <span class="n">mega_stub</span><span class="p">();</span>
+<span class="p">}</span>
+
+<span class="kt">void</span> <span class="nf">setup</span><span class="p">()</span> <span class="p">{}</span>
+<span class="kt">void</span> <span class="nf">loop</span><span class="p">()</span> <span class="p">{}</span>
+</code></pre></div></div>
+
+<p>Exporting it generates two files: <code class="language-plaintext highlighter-rouge">.bin</code> and <code class="language-plaintext highlighter-rouge">.elf</code>. We need to load the <code class="language-plaintext highlighter-rouge">.elf</code> one because it has the debug symbols.</p>
+
+<p><img src="/img/punched-in-series-part1-9.jpg" alt="Debug symbols" /></p>
+
+<p>I then loaded it in Ghidra, let Ghidra analyze it, and generated a FidDb out of it.</p>
+
+<p>Steps:</p>
+<ol>
+  <li><strong>Create an empty FidDb</strong>: Tools -&gt; Function ID -&gt; Create new empty FidDb</li>
+  <li><strong>Populate the FidDb</strong>: Tools -&gt; Function ID -&gt; Populate Fid Database (Use Xtensa Little Endian for the language field)</li>
+</ol>
+
+<p>After that, we can head to the dumped firmware and attached the created FidDb (Tools -&gt; Function ID -&gt; Attach existing FidDb). Make sure to let the Ghidra to analyze it again!</p>
+
+<p>Tadaaa!</p>
+
+<p><img src="/img/punched-in-series-part1-10.jpg" alt="Fixed Function Table" /></p>
+
+<p>With meaningful function names now identified, Ghidra can show us the actual structure of the firmware. Instead of cryptic <code class="language-plaintext highlighter-rouge">FUN_40200000</code> addresses, we now see recognizable functions like <code class="language-plaintext highlighter-rouge">setup()</code>, <code class="language-plaintext highlighter-rouge">loop()</code>, <code class="language-plaintext highlighter-rouge">WiFi_init()</code>, and others.</p>
+
+<p>Everything is ready for our adventure.</p>
+
+<h3 id="whats-next">What’s Next</h3>
+
+<p>In Part 1, we identified the hardware, successfully dumped the firmware and made some helper utilities along the way. We created a pattern for ImHex, and were able to load the firmware in Ghidra and adjust it so we can reverse it later with more ease.</p>
+
+<p>I think we are at a good point now and ready to take the next step. In the next post (that hopefully I can allocate some time to write soon), we will take a look at the actual firmware to see how it actually works, if there are any vulnerabilities with it and what hidden functionalities exist. We will talk about ESP8266 firmware much deeper.</p>
+
+<p>Feel free to ping me if you had any questions!
+Peace!</p>
+
+<h3 id="references--tools">References &amp; Tools</h3>
+
+<ul>
+  <li><a href="http://cholla.mmto.org/esp8266/xtensa.html">Xtensa cheat sheet</a></li>
+  <li><a href="https://github.com/esp8266/esp8266-wiki/wiki/Memory-Map">ESP8266 memory map (and wiki)</a></li>
+  <li><a href="https://github.com/espressif/esptool/blob/master/esptool/bin_image.py">esptool bin_image.py</a></li>
+  <li><a href="https://github.com/lopqto/ImHex-Patterns/blob/esp8266/patterns/esp8266.hexpat">ESP8266 pattern</a></li>
+  <li><a href="https://github.com/lopqto/ghidra-esp8266/tree/patch-12.x">ESP826 loader (patched for Ghidra 12.x)</a></li>
+</ul>
+
+
+  </article>
+  
+  
+
+
+
+
+</div>
+
+        </div>
+        <div class="col-second">
+          <div class="col-box col-box-author">
+  <img class="avatar" src="https://gravatar.com/avatar/2299d4e1a3508f63aaac7d956f41784372595562de6274dc0157c107ae2c4d07?v=1755405717000&size=256" alt="Hamidreza Babaee">
+  <div class="col-box-title name">Hamidreza Babaee</div>
+  <p>Poking around to find out.</p>
+  <p class="contact">
+    
+    
+    
+    <a href="https://github.com/lopqto">GitHub</a>
+    
+    <a href="https://x.com/lopqto">X/Twitter</a>
+    
+  </p>
+</div>
+
+
+<div class="col-box post-toc hide">
+  <div class="col-box-title">TOC</div>
+  <div class="toc-body"></div>
+</div>
+
+
+        </div>
+      </div>
+    </div>
+
+    <footer class="footer">
+<div class="wrapper">
+&copy; 2026 Hamidreza Babaee
+</div>
+</footer>
+
+<script type="text/x-mathjax-config">MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$']]}});</script>
+<script src="/js/easybook.js"></script>
+
+
+  </body>
+
+</html>

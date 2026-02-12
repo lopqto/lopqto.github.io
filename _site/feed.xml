@@ -6,9 +6,314 @@
 </description>
     <link>https://lopqto.me/</link>
     <atom:link href="https://lopqto.me/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Wed, 07 Jan 2026 14:56:21 +0330</pubDate>
-    <lastBuildDate>Wed, 07 Jan 2026 14:56:21 +0330</lastBuildDate>
+    <pubDate>Thu, 12 Feb 2026 11:39:47 +0330</pubDate>
+    <lastBuildDate>Thu, 12 Feb 2026 11:39:47 +0330</lastBuildDate>
     <generator>Jekyll v3.9.3</generator>
+    
+      <item>
+        <title>Punched In: Extracting Firmware from an ESP8266 RFID Terminal</title>
+        <description>&lt;p&gt;I was looking to buy a time tracker device for the office. In my searching process I found a very cheap device that immediately triggered my curiosity. As you may already know by reading my older posts, I love dissecting this kind of hardware (unknown &amp;amp; random manufacturer), so I decided to purchase one just to reverse it.&lt;/p&gt;
+
+&lt;h3 id=&quot;the-device&quot;&gt;The Device&lt;/h3&gt;
+
+&lt;p&gt;This device is a time tracking device. After you turn it on for the first time, it starts a wireless access point. You can connect to it and open the control panel to configure your office’s WiFi credentials. After the reboot it will act as a WiFi client and connect to the AP.&lt;/p&gt;
+
+&lt;p&gt;Each user has a unique RFID card, and they will scan it using the terminal. The terminal will send the RFID tag number plus the timestamp to a remote API.&lt;/p&gt;
+
+&lt;h3 id=&quot;hardware-parts&quot;&gt;Hardware Parts&lt;/h3&gt;
+
+&lt;p&gt;After I configured the WiFi credentials and restarted the device, I headed to the DHCP page of my router to find the IP address of the device so I can open the control panel. In that list of entries, I found something very interesting:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/img/punched-in-series-part1-1.jpg&quot; alt=&quot;DHCP page enteries&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;That was the AHA moment!&lt;/p&gt;
+
+&lt;p&gt;As per &lt;a href=&quot;https://en.wikipedia.org/wiki/ESP8266&quot;&gt;Wikipedia’s description&lt;/a&gt;:&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;The ESP8266 is a low-cost Wi-Fi microchip, with built-in TCP/IP networking software, and microcontroller capability, produced by Espressif Systems&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;It makes sense. To keep the hardware cost very low, they used a very cheap microcontroller with WiFi connectivity and to compensate for that, they delegated all the main functionalities like leave tracker, timesheet, etc. to a remote API.&lt;/p&gt;
+
+&lt;p&gt;I decided to open the device and take a look at it:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/img/punched-in-series-part1-2.jpg&quot; alt=&quot;The inside&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;To be honest, I felt down a bit. The hardware is far from an intricate device and more like a hobby project.&lt;/p&gt;
+
+&lt;p&gt;Let’s review:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;&lt;strong&gt;Microcontroller&lt;/strong&gt;: Wemos D1 Mini -&amp;gt; an ESP8266-based development board.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Display&lt;/strong&gt;: 1602 LCD with I2C Backpack&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;RFID Reader&lt;/strong&gt;: RC522 (MFRC522) - &lt;a href=&quot;https://www.nxp.com/docs/en/data-sheet/MFRC522.pdf&quot;&gt;datasheet&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Base Board&lt;/strong&gt;: Custom “Shield” / Carrier PCB -&amp;gt; Acts as a “motherboard” to fix the messy jumper wires issue. It breaks out the pins from Wemos D1 Mini to the specific headers for the RFID and LCD.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;LED Indicators&lt;/strong&gt;&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;I decided to focus on the firmware instead of hardware and go as deep as possible.&lt;/p&gt;
+
+&lt;h3 id=&quot;getting-the-firmware&quot;&gt;Getting the Firmware&lt;/h3&gt;
+
+&lt;p&gt;We can easily see the mini USB port that’s connected to an AC socket to act as the power source.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/img/punched-in-series-part1-3.jpg&quot; alt=&quot;mini USB port&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;We can connect the Wemos to our PC using a simple mini USB cable, and the dumping part would be a piece of cake for these reasons:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;strong&gt;Hardware Disabling:&lt;/strong&gt; You cannot disable the port via software. You must physically destroy the UART traces (TX/RX lines) or remove the USB-to-Serial IC (e.g., &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CH340&lt;/code&gt;) after flashing.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Flash Encryption:&lt;/strong&gt; The ESP8266 does not support hardware flash encryption. If someone has physical access, they can bypass the USB port and wire directly to the SPI flash chip pins to dump data.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;eFuse Limitations:&lt;/strong&gt; Unlike the ESP32, the ESP8266 lacks the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;flash_crypt_cnt&lt;/code&gt; or &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;JTAG_DISABLE&lt;/code&gt;  eFuses.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Physical Protection:&lt;/strong&gt; The only real protection is potting the board in epoxy to prevent physical probing of the flash memory chip. Which in this case, they didn’t!&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;To verify my guess, I connected the microcontroller to my PC and checked the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;flash-id&lt;/code&gt;&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;esptool &lt;span class=&quot;nt&quot;&gt;--port&lt;/span&gt; /dev/cu.usbserial-A5069RR4 flash-id
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;&lt;img src=&quot;/img/punched-in-series-part1-4.jpg&quot; alt=&quot;flash-id details&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;To Dump it:&lt;/p&gt;
+
+&lt;div class=&quot;language-shell highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;esptool &lt;span class=&quot;nt&quot;&gt;--port&lt;/span&gt; /dev/cu.usbserial-A5069RR4 read-flash 0 0x400000 wemos_firmware_dump.bin
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Note: Wemos D1 Mini has exactly 4MB of memory, so we read it all.&lt;/p&gt;
+
+&lt;p&gt;And finally to verify the dump:&lt;/p&gt;
+
+&lt;div class=&quot;language-shell highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;esptool &lt;span class=&quot;nt&quot;&gt;--chip&lt;/span&gt; esp8266 image-info wemos_firmware_dump.bin
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;&lt;img src=&quot;/img/punched-in-series-part1-5.jpg&quot; alt=&quot;image-info details&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Cool, we got the entire (probably) unencrypted firmware. Let’s move to the next part!&lt;/p&gt;
+
+&lt;h3 id=&quot;reading-the-binary&quot;&gt;Reading the Binary&lt;/h3&gt;
+
+&lt;p&gt;I found &lt;a href=&quot;http://cholla.mmto.org/esp8266/xtensa.html&quot;&gt;this guide&lt;/a&gt; that describes ESP8266’s processor architecture like this:&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;The ESP8266 has an Xtensa lx106 processor at its core. This is a 32 bit RISC processor with 16 registers.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;In the previous step we used &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;esptool&lt;/code&gt; to analyze the image info. So obviously, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;esptool&lt;/code&gt; knows how to parse the image.&lt;/p&gt;
+
+&lt;p&gt;I digged a little bit deeper in the esptool source code and found this &lt;a href=&quot;https://github.com/espressif/esptool/blob/master/esptool/bin_image.py&quot;&gt;bin_image.py&lt;/a&gt; file which is responsible to parse the headers.&lt;/p&gt;
+
+&lt;p&gt;By looking at the file I found these headers:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;&lt;strong&gt;Common Header:&lt;/strong&gt;&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;div class=&quot;language-python highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;n&quot;&gt;magic&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;segments&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;bp&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;flash_mode&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;bp&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;flash_size_freq&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;bp&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;entrypoint&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;struct&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;unpack&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&amp;lt;BBBBI&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;load_file&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;read&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;8&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Which is equivalent to:&lt;/p&gt;
+
+&lt;div class=&quot;language-rust highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;header&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;nb&quot;&gt;u8&lt;/span&gt;  &lt;span class=&quot;n&quot;&gt;magic&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;nb&quot;&gt;u8&lt;/span&gt;  &lt;span class=&quot;n&quot;&gt;segments&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;c&quot;&gt;// count&lt;/span&gt;
+    &lt;span class=&quot;nb&quot;&gt;u8&lt;/span&gt;  &lt;span class=&quot;n&quot;&gt;flash_mode&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;nb&quot;&gt;u8&lt;/span&gt;  &lt;span class=&quot;n&quot;&gt;flash_size_freq&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;nb&quot;&gt;u32&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;entrypoint&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;};&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;&lt;strong&gt;Segment Header:&lt;/strong&gt;&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;div class=&quot;language-python highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;offset&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;size&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;struct&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;unpack&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&amp;lt;II&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;f&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;read&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;8&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Which is equivalent to:&lt;/p&gt;
+
+&lt;div class=&quot;language-rust highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;segment_header&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;nb&quot;&gt;u32&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;offset&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;c&quot;&gt;// load address&lt;/span&gt;
+    &lt;span class=&quot;nb&quot;&gt;u32&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;size&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;};&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;And for the segments, data comes right after the segment header so we can write it like:&lt;/p&gt;
+
+&lt;div class=&quot;language-rust highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;segment_header&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;nb&quot;&gt;u32&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;offset&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;nb&quot;&gt;u32&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;size&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;nb&quot;&gt;u8&lt;/span&gt;  &lt;span class=&quot;n&quot;&gt;data&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;size&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;];&lt;/span&gt; 
+&lt;span class=&quot;p&quot;&gt;};&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;I dug way deeper and wrote a pattern file for the entire image with some helper variables for &lt;a href=&quot;https://imhex.werwolv.net/&quot;&gt;ImHex&lt;/a&gt; and sent a pull request (&lt;a href=&quot;https://github.com/WerWolv/ImHex-Patterns/pull/492&quot;&gt;PR #492&lt;/a&gt;) for it. At this moment the PR is still open.&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;a href=&quot;https://github.com/lopqto/ImHex-Patterns/blob/esp8266/patterns/esp8266.hexpat&quot;&gt;Pattern file&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;&lt;img src=&quot;/img/punched-in-series-part1-6.jpg&quot; alt=&quot;Example firmware in ImHex&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;After verifying everything about the legitimacy of the firmware and writing a pattern file for it, we are ready to load it in Ghidra for further analysis.&lt;/p&gt;
+
+&lt;h3 id=&quot;into-ghidra&quot;&gt;Into Ghidra&lt;/h3&gt;
+
+&lt;p&gt;Ghidra already supports Xtensa pretty well (added in version 11.0) and can disassemble and generate pseudocode for these processors easily. The issue resides with the custom proprietary firmware format of ESP8266. Ghidra must know where to look, where to disassemble as code, and where to look for data. For these kinds of situations, Ghidra uses loaders.&lt;/p&gt;
+
+&lt;p&gt;Ghidra doesn’t have a native loader that understands ESP8266 firmware. Unlike standard formats like ELF or Mach-O, ESP8266 uses a proprietary binary format with a custom header structure featuring:&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;An 8-byte header with magic byte (&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;0xe9&lt;/code&gt;) for identification&lt;/li&gt;
+  &lt;li&gt;Segment-based layout where each section has its own offset and size&lt;/li&gt;
+  &lt;li&gt;Multiple headers including a user ROM header at offset &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;0x1000&lt;/code&gt;&lt;/li&gt;
+  &lt;li&gt;Specific memory mappings for IROM, user code, and data segments&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Without a proper loader, Ghidra would need you to manually extract and position each binary segment into the correct memory regions. The loader handles all this automatically by parsing the firmware structure and creating properly mapped memory blocks with correct permissions.&lt;/p&gt;
+
+&lt;p&gt;I found an older ESP8266 loader &lt;a href=&quot;https://github.com/hank/ghidra-esp8266&quot;&gt;here!&lt;/a&gt;, but the codebase was outdated and needed updates. So I decided to send a pull request (&lt;a href=&quot;https://github.com/hank/ghidra-esp8266/pull/6&quot;&gt;PR #6&lt;/a&gt;) to contribute the fixes back to the community.&lt;/p&gt;
+
+&lt;p&gt;After installing and enabling the custom loader, we can easily import the dumped firmware into Ghidra:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/img/punched-in-series-part1-7.jpg&quot; alt=&quot;Ghidra&apos;s open file dialog&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Loader parses the firmware headers like what we did in the previous sections, then creates memory layouts and fixes the permissions:&lt;/p&gt;
+
+&lt;table&gt;
+  &lt;thead&gt;
+    &lt;tr&gt;
+      &lt;th&gt;Address&lt;/th&gt;
+      &lt;th&gt;Name&lt;/th&gt;
+      &lt;th&gt;Loader Section Name –&lt;/th&gt;
+      &lt;th&gt;Size&lt;/th&gt;
+      &lt;th&gt;Description&lt;/th&gt;
+    &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+    &lt;tr&gt;
+      &lt;td&gt;0x3FFE8000&lt;/td&gt;
+      &lt;td&gt;dram0&lt;/td&gt;
+      &lt;td&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.user_data&lt;/code&gt;&lt;/td&gt;
+      &lt;td&gt;14000h&lt;/td&gt;
+      &lt;td&gt;User data RAM. Available to applications&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td&gt;0x40100000&lt;/td&gt;
+      &lt;td&gt;iram1&lt;/td&gt;
+      &lt;td&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.user_code&lt;/code&gt;&lt;/td&gt;
+      &lt;td&gt;8000h&lt;/td&gt;
+      &lt;td&gt;Instruction RAM. Used by bootloader&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td&gt;0x40200000&lt;/td&gt;
+      &lt;td&gt;SPI Flash&lt;/td&gt;
+      &lt;td&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;code&lt;/code&gt;&lt;/td&gt;
+      &lt;td&gt;-&lt;/td&gt;
+      &lt;td&gt;SPI Flash is mapped here&lt;/td&gt;
+    &lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;
+
+&lt;p&gt;After loading the firmware into Ghidra, we can see that it was able to analyze the firmware. One of the simplest ways to verify this is by looking at the strings. Seeing meaningful strings usually means that the loader did its job and was able to map the data sections to the correct memory addresses.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/img/punched-in-series-part1-8.jpg&quot; alt=&quot;String view&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;If we head to the function lists, we can spot the other issue. Ghidra was unable to find function signatures using their signature db and all of the functions are labeled like &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;FUN_*&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/img/punched-in-series-part1-11.jpg&quot; alt=&quot;Function Table&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;To solve this issue we can use a &lt;strong&gt;FidDb&lt;/strong&gt;. It’s a database file used by &lt;strong&gt;Ghidra’s Function ID (FID)&lt;/strong&gt; analyzer to identify and match functions across different binaries.&lt;/p&gt;
+
+&lt;p&gt;Because we are in microcontroller land, usually we are limited in terms of public FidDbs. For that reason, we need to create one ourselves.&lt;/p&gt;
+
+&lt;p&gt;To do that, we need to compile another firmware that uses same SDK and libraries with debug symbols on. To build a firmware for an ESP8266, there are two viable options:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;&lt;strong&gt;Arduino IDE + ESP8266 SDK&lt;/strong&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;PlatformIO + ESP8266 SDK&lt;/strong&gt;&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;We can have an educated guess and based on the hardware design, guess that they used Arduino IDE to develop the firmware because it is much easier and user friendly.&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;You can read about installing ESP8266 SDK for Arduino IDE &lt;a href=&quot;https://randomnerdtutorials.com/how-to-install-esp8266-board-arduino-ide/&quot;&gt;here!&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Generating function signatures heavily depends on the SDK and library version. Even minor version differences can affect function signatures due to compiler optimizations or code changes. While ESP8266 SDKs share core functionality across versions, you shouldn’t assume signature compatibility. To be honest, you cannot expect 100% function signature coverage. FidDb is a helper utility to make the reversing process easier, not an ultimate solution. That’s why I decided not to play the cat-and-mouse game. of hunting down the exact SDK version to match the FidDb perfectly. The reality is that even with a perfectly matched FidDb, there will always be functions that need manual analysis. Since ESP8266 firmware is relatively small and the FidDb provides useful partial matches even across versions, I chose to just use what’s available and move forward with the actual reverse engineering. The time spent hunting for the exact SDK version is better spent on the analysis itself.&lt;/p&gt;
+
+&lt;p&gt;I created this simple sketch:&lt;/p&gt;
+
+&lt;div class=&quot;language-c++ highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;cp&quot;&gt;#include &amp;lt;ESP8266WiFi.h&amp;gt;
+#include &amp;lt;ESP8266WebServer.h&amp;gt;
+#include &amp;lt;ESP8266HTTPClient.h&amp;gt;
+#include &amp;lt;ESP8266mDNS.h&amp;gt;
+#include &amp;lt;WiFiClient.h&amp;gt;
+#include &amp;lt;WiFiUdp.h&amp;gt;
+#include &amp;lt;DNSServer.h&amp;gt;
+&lt;/span&gt;
+&lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;mega_stub&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+
+  &lt;span class=&quot;c1&quot;&gt;// Never execute&lt;/span&gt;
+  &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;false&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;mega_stub&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;setup&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{}&lt;/span&gt;
+&lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;loop&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Exporting it generates two files: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.bin&lt;/code&gt; and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.elf&lt;/code&gt;. We need to load the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.elf&lt;/code&gt; one because it has the debug symbols.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/img/punched-in-series-part1-9.jpg&quot; alt=&quot;Debug symbols&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;I then loaded it in Ghidra, let Ghidra analyze it, and generated a FidDb out of it.&lt;/p&gt;
+
+&lt;p&gt;Steps:&lt;/p&gt;
+&lt;ol&gt;
+  &lt;li&gt;&lt;strong&gt;Create an empty FidDb&lt;/strong&gt;: Tools -&amp;gt; Function ID -&amp;gt; Create new empty FidDb&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Populate the FidDb&lt;/strong&gt;: Tools -&amp;gt; Function ID -&amp;gt; Populate Fid Database (Use Xtensa Little Endian for the language field)&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;After that, we can head to the dumped firmware and attached the created FidDb (Tools -&amp;gt; Function ID -&amp;gt; Attach existing FidDb). Make sure to let the Ghidra to analyze it again!&lt;/p&gt;
+
+&lt;p&gt;Tadaaa!&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/img/punched-in-series-part1-10.jpg&quot; alt=&quot;Fixed Function Table&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;With meaningful function names now identified, Ghidra can show us the actual structure of the firmware. Instead of cryptic &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;FUN_40200000&lt;/code&gt; addresses, we now see recognizable functions like &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;setup()&lt;/code&gt;, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;loop()&lt;/code&gt;, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;WiFi_init()&lt;/code&gt;, and others.&lt;/p&gt;
+
+&lt;p&gt;Everything is ready for our adventure.&lt;/p&gt;
+
+&lt;h3 id=&quot;whats-next&quot;&gt;What’s Next&lt;/h3&gt;
+
+&lt;p&gt;In Part 1, we identified the hardware, successfully dumped the firmware and made some helper utilities along the way. We created a pattern for ImHex, and were able to load the firmware in Ghidra and adjust it so we can reverse it later with more ease.&lt;/p&gt;
+
+&lt;p&gt;I think we are at a good point now and ready to take the next step. In the next post (that hopefully I can allocate some time to write soon), we will take a look at the actual firmware to see how it actually works, if there are any vulnerabilities with it and what hidden functionalities exist. We will talk about ESP8266 firmware much deeper.&lt;/p&gt;
+
+&lt;p&gt;Feel free to ping me if you had any questions!
+Peace!&lt;/p&gt;
+
+&lt;h3 id=&quot;references--tools&quot;&gt;References &amp;amp; Tools&lt;/h3&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;a href=&quot;http://cholla.mmto.org/esp8266/xtensa.html&quot;&gt;Xtensa cheat sheet&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://github.com/esp8266/esp8266-wiki/wiki/Memory-Map&quot;&gt;ESP8266 memory map (and wiki)&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://github.com/espressif/esptool/blob/master/esptool/bin_image.py&quot;&gt;esptool bin_image.py&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://github.com/lopqto/ImHex-Patterns/blob/esp8266/patterns/esp8266.hexpat&quot;&gt;ESP8266 pattern&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://github.com/lopqto/ghidra-esp8266/tree/patch-12.x&quot;&gt;ESP826 loader (patched for Ghidra 12.x)&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+</description>
+        <pubDate>Thu, 12 Feb 2026 03:30:00 +0330</pubDate>
+        <link>https://lopqto.me/posts/punched-in-series-part1</link>
+        <guid isPermaLink="true">https://lopqto.me/posts/punched-in-series-part1</guid>
+        
+        
+        <category>reverse-engineering</category>
+        
+        <category>hardware</category>
+        
+      </item>
     
       <item>
         <title>Via Negativa: On Reducing Entropy in Systems</title>
