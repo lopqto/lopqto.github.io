@@ -20,7 +20,7 @@
   <div class="col-box-title">TOC</div>
   <div class="toc-body"></div>
 </div>
-{% elsif page.url == "/" %}
+{% elsif page.url == "/" or page.url contains "/page" %}
 <div class="col-box">
   <div class="col-box-title">Newest Posts</div>
   <ul class="post-list">
